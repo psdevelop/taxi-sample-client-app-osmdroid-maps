@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:background="#f2fad7"
+    android:descendantFocusability="blocksDescendants" >
+
+    <RelativeLayout
+        android:id="@+id/layout_item"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content" >
+
+        <TextView
+            android:id="@+id/txt_emp_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="6dp" />
+
+        <TextView
+            android:id="@+id/txt_emp_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/txt_emp_id"
+            android:padding="6dp" />
+
+        <TextView
+            android:id="@+id/txt_emp_dob"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/txt_emp_name"
+            android:padding="6dp" />
+
+        <TextView
+            android:id="@+id/txt_emp_salary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/txt_emp_dob"
+            android:padding="6dp" />
+    </RelativeLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@+id/layout_item"
+        android:background="@color/colorPrimary" />
+</RelativeLayout>
