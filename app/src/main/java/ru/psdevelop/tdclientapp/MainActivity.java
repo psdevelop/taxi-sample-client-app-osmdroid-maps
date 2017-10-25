@@ -349,6 +349,12 @@ public class MainActivity extends AppCompatActivity {
                                         showGMAddressIfEmpty(resultJson.getString("odt"+i).replace("(ONLINE)",""));
                                     } catch (Exception e) { }
                                 }
+								
+                                if(i==0) {
+                                    try {
+                                        showEndAddressIfEmpty(resultJson.getString("oena"+i).replace("(ONLINE)",""));
+                                    } catch (Exception e) { }
+                                }
 
                                 ords_dt = ords_dt+" "+(i+1)+". "+(resultJson.has("osdt"+i)?resultJson.getString("osdt"+i)+" ":"")+
                                         resultJson.getString("odt"+i).replace("(ONLINE)","");
@@ -653,6 +659,16 @@ public class MainActivity extends AppCompatActivity {
                 mSectionsPagerAdapter.firstTab.editTextFromAdres.setText(txt);
         }   catch(Exception e)  {
             showMyMsg("showGMAddress: "+e.getMessage());
+        }
+    }
+	
+    public void showEndAddressIfEmpty(String txt)   {
+        try {
+            if(mSectionsPagerAdapter.firstTab.editTextToAdres.getText().length()<=0 ||
+                    !mSectionsPagerAdapter.firstTab.editTextToAdres.getText().equals(txt))
+                mSectionsPagerAdapter.firstTab.editTextToAdres.setText(txt);
+        }   catch(Exception e)  {
+            showMyMsg("showEndAddress: "+e.getMessage());
         }
     }
 
