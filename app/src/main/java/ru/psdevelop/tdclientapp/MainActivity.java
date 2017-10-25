@@ -10,6 +10,7 @@ import android.content.DialogInterface;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
@@ -48,6 +49,11 @@ import android.content.Intent;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.osmdroid.api.IMapController;
+import org.osmdroid.util.BoundingBox;
+import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.infowindow.MarkerInfoWindow;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -67,9 +73,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.views.MapView;
+
 public class MainActivity extends AppCompatActivity {
 
-    public static final String INFO_ACTION = "com.psdevelop.tdclientappthg.MA_INFO_ACTION";
+    public static final String INFO_ACTION = "com.psdevelop.tdclientapp.MA_INFO_ACTION"; //recompile
     public static Handler handle;
     MACheckTimer maCheckTimer=null;
     static SharedPreferences prefs=null;
@@ -96,7 +105,9 @@ public class MainActivity extends AppCompatActivity {
 
     private ViewPager mViewPager;
     static WebView wv;
+    static MapView map;
     static TextView textViewStatus=null;
+    static String ordersInfo="";
 
     public void checkGPSPermission()    {
         // Here, thisActivity is the current activity
@@ -123,6 +134,18 @@ public class MainActivity extends AppCompatActivity {
                 // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
                 // app-defined int constant. The callback method gets the
                 // result of the request.
+            }
+        }
+
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            } else {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        TDClientService.TDC_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
             }
         }
     }
@@ -179,6 +202,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void playMP3(int res_id)	{
+        MediaPlayer mediaPlayer;
+        mediaPlayer = MediaPlayer.create(this, res_id);
+        mediaPlayer.setVolume(1, 1);
+        mediaPlayer.start();
+    }
+
+    TabLayout tabLayout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -203,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
         checkGPSPermission();
         //mSectionsPagerAdapter.
 
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
+        tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
         tabLayout.setOnTabSelectedListener(new TabLayout.ViewPagerOnTabSelectedListener(mViewPager) {
             @Override
@@ -226,18 +258,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
-
         sendInfoBroadcast(ParamsAndConstants.ID_ACTION_WAKE_UP_NEO, "---");
 
         handle = new Handler() {
+
             @Override
             public void handleMessage(Message msg) {
                 if (msg.arg1 == ParamsAndConstants.SHOW_MESSAGE_TOAST) {
@@ -262,13 +286,22 @@ public class MainActivity extends AppCompatActivity {
                         JSONObject resultJson = new JSONObject((new JSONObject(msg.getData().
                                 getString("msg_text"))).getString("cl_status"));
 
+                        //showMyMsg((new JSONObject(msg.getData().
+                        //        getString("msg_text"))).getString("cl_status"));
                         boolean hasOrders=false;
                         if(resultJson.has("ocn")) {
                             drivers_markers="";
                             //showMyMsg("Заказов " + resultJson.getInt("ocn"));
                             String ords_dt = "";
+                            String prevOrdersInfo = ordersInfo;
+                            ordersInfo = "";
 
                             lastOrdersCount = resultJson.getInt("ocn");
+                            if(lastOrdersCount<=0) {
+                                drLat=0;
+                                drLon=0;
+                            }
+
                             if(hasOrderRequest&&lastOrdersCount>0)  {
                                 try {
                                     hasOrderRequest = false;
@@ -283,6 +316,14 @@ public class MainActivity extends AppCompatActivity {
                             }
                             for (int i = 0; i < resultJson.getInt("ocn"); i++) {
                                 hasOrders = true;
+
+                                if(i==0) {
+                                    try {
+                                        //showMyMsg(resultJson.getString("odt"+i));
+                                        showGMAddressIfEmpty(resultJson.getString("odt"+i).replace("(ONLINE)",""));
+                                    } catch (Exception e) { }
+                                }
+
                                 ords_dt = ords_dt+" "+(i+1)+". "+(resultJson.has("osdt"+i)?resultJson.getString("osdt"+i)+" ":"")+
                                         resultJson.getString("odt"+i).replace("(ONLINE)","");
                                 if(hasMAOrdering&&hasMAOrderAdr.length()>0) {
@@ -310,19 +351,46 @@ public class MainActivity extends AppCompatActivity {
                                     if (rcst == 2)
                                         ords_dt = ords_dt + " в обработке";
                                     if (resultJson.has("ors" + i)) {
+                                        ordersInfo = ordersInfo + "status" + resultJson.getInt("ors" + i);
                                         if (resultJson.getInt("ors" + i) == 0)
                                             ords_dt = ords_dt + "ищем машину";
                                         if (resultJson.getInt("ors" + i) == 8)
                                             ords_dt = ords_dt + "за Вами отправлена машина";
                                         if (resultJson.has("opl" + i))
-                                        if (resultJson.getInt("opl" + i) == 1 && resultJson.getInt("ors" + i) == 8)
+                                        if (resultJson.getInt("opl" + i) == 1 && resultJson.getInt("ors" + i) == 8) {
                                             ords_dt = ords_dt + "ожидает выходите";
+                                            ordersInfo = ordersInfo + "opl";
+                                        }
                                         if (resultJson.getInt("ors" + i) == 26)
                                             ords_dt = ords_dt + "дан отчет " + resultJson.getString("osumm" + i);
                                         if (resultJson.has("tmh" + i))
                                         if (resultJson.getString("tmh" + i).length() > 0 && resultJson.getInt("ors" + i) == 8)
                                             ords_dt = ords_dt + ">на выполнении (таксометр активен)";
+
+                                        if (resultJson.has("dgn" + i)) {
+                                            if (resultJson.getString("dgn" + i).length() > 0) {
+                                                ords_dt = ords_dt + " Гос. номер: " + resultJson.getString("dgn" + i);
+                                                ordersInfo = ordersInfo + resultJson.getString("dgn" + i);
+                                            }
+                                        }
+
+                                        if (resultJson.has("dmrk" + i)) {
+                                            if (resultJson.getString("dmrk" + i).length() > 0) {
+                                                ords_dt = ords_dt + " Марка: " + resultJson.getString("dmrk" + i);
+                                                ordersInfo = ordersInfo + resultJson.getString("dmrk" + i);
+                                            }
+                                        }
+
+                                        if (resultJson.has("dphn" + i)) {
+                                            if (resultJson.getString("dphn" + i).length() > 0) {
+                                                ords_dt = ords_dt + " Телефон водителя: " + resultJson.getString("dphn" + i);
+                                                ordersInfo = ordersInfo + resultJson.getString("dphn" + i);
+                                            }
+                                        }
+
                                     }
+
+
                                 }
 
                                 boolean hasLat=false;
@@ -360,18 +428,24 @@ public class MainActivity extends AppCompatActivity {
                             }   catch(Exception e)  {
 
                             }
+
+                            if(ordersInfo.indexOf("status8")>=0 && !prevOrdersInfo.equals(ordersInfo)) {
+                                playMP3(R.raw.truck);
+                                showMyMsg("Изменился статус заказов (назначена, прибыла машина и т.д.)!");
+                            }
+
+                            if(tabLayout.getSelectedTabPosition() == 1) {
+                                //showMyMsg("Обновление карты..."+drLat+"==="+drLon);
+                                showMeOnMap();
+                            }
+                            //Конец анализа данных о заказах
                         }
                         else
                             showMyMsg("Нет информации по количеству заказов в ответе сервера!");
-                        /*if('dcn' in csjson)	{
-                            if(csjson['dcn']<0)
-                                $usernameInput.hide();
-                            else
-                                $usernameInput.show();
-                            if(csjson['dcn'])
-                                $usernameInput.html('Машин на линии - '+csjson['dcn']);
-                            //alert('Машин на линии - '+csjson['dcn']);
-                        }*/
+
+                        //showMyMsg("Обновление..."+tabLayout.getSelectedTabPosition());
+
+
                     }   catch(Exception e)  {
                         showMyMsg("Неудачное чтение статуса!"+e.getMessage());
                     }
@@ -388,6 +462,7 @@ public class MainActivity extends AppCompatActivity {
                     //tvInitCallInfo.setText(systemTimeStamp()+": "+msg.getData().
                     //        getString("msg_text"));
                     //showMyMsg("Определены"+lastLat+"-"+lastLon);
+                    mViewPager.setCurrentItem(1);
                     showMeOnMap();
                 } else if (msg.arg1 == ParamsAndConstants.MA_CHECK_STATUSES) {
                     //showToast("--==");
@@ -461,6 +536,7 @@ public class MainActivity extends AppCompatActivity {
                             Bundle bnd = new Bundle();
                             bnd.putString("msg_text", intent.getStringExtra(ParamsAndConstants.MSG_TEXT));
                             msg.setData(bnd);
+                            //showMyMsg("SHOW_STATUS_INFO"+intent.getStringExtra(ParamsAndConstants.MSG_TEXT));
                             handle.sendMessage(msg);
 
                         } catch (Exception ex) {
@@ -544,6 +620,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void showGMAddressIfEmpty(String txt)   {
+        try {
+            if(mSectionsPagerAdapter.firstTab.editTextFromAdres.getText().length()<=0 ||
+                    !mSectionsPagerAdapter.firstTab.editTextFromAdres.getText().equals(txt))
+                mSectionsPagerAdapter.firstTab.editTextFromAdres.setText(txt);
+        }   catch(Exception e)  {
+            showMyMsg("showGMAddress: "+e.getMessage());
+        }
+    }
+
     public void setTextViewStatus(String txt)   {
         try {
             textViewStatus.setText(txt);
@@ -569,35 +655,95 @@ public class MainActivity extends AppCompatActivity {
     public void getCoordsByAdr(String gadr)    {
         if(gadr.length()>2)
         try {
-            //showMyMsg(gadr);
-            //showMyMsg(getGeoCode(gadr, true));
             final String tgadr = gadr;
             sendReverseGeocodeHTTPRequest(tgadr);
-            // Create the AlertDialog object and return it
-            //builder.create();
-            //builder.show();
-
         }   catch(Exception e)  {
             showMyMsg("getCoordsByAdr: "+e.getMessage());
         }
     }
 
+    Marker startMarker;
+    Marker driverMarker;
+
     public void showMeOnMap()   {
-        //showMyMsg(lastLat + ":" + lastLon);
         try {
-            WebSettings webSettings = wv.getSettings();
-            webSettings.setJavaScriptEnabled(true);
-            if(!hasMeGAdrDetecting)
-            sendGeocodeHTTPRequest( lastLat, lastLon);
-            wv.clearCache(true);
-            wv.loadUrl("about:blank");
-            wv.loadData(ParamsAndConstants.mapHtml.replace("***___lastLat", lastLat + "").replace("***___lastGAdr", (hasMeGAdrDetecting?lastAdr:"") + "").
-                            replace("***___lastLon", lastLon + "").replace("***___drivers_markers",drivers_markers),
-                    "text/html; charset=utf-8", "UTF-8");
-            mViewPager.setCurrentItem(1);
+
+            if(!hasMeGAdrDetecting && lastLat>0 && lastLon>0)
+                sendGeocodeHTTPRequest( lastLat, lastLon);
+
+            if(startMarker!=null)
+                try {
+                    map.getOverlays().remove(startMarker);
+                } catch(Exception e) {
+
+                }
+            startMarker = null;
+
+            if(driverMarker!=null)
+                try {
+                    map.getOverlays().remove(driverMarker);
+                } catch(Exception e) {
+
+                }
+            driverMarker = null;
+            map.getOverlays().clear();
+
+            IMapController mapController = map.getController();
+            mapController.setZoom(15);
+
+            GeoPoint startPoint=null;
+            if(lastLat>0 && lastLon>0) {
+                startPoint = new GeoPoint(lastLat, lastLon);
+
+                //0. Using the Marker overlay
+                startMarker = new Marker(map);
+                startMarker.setPosition(startPoint);
+                startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                startMarker.setTitle((hasMeGAdrDetecting ? lastAdr : "Вы здесь!"));
+                //startMarker.setIcon(getResources().getDrawable(R.drawable.marker_kml_point).mutate());
+                //startMarker.setImage(getResources().getDrawable(R.drawable.ic_launcher));
+                startMarker.setInfoWindow(new MarkerInfoWindow(R.layout.bonuspack_bubble_black, map));
+                startMarker.setDraggable(true);
+                //startMarker.setOnMarkerDragListener(new OnMarkerDragListenerDrawer());
+                map.getOverlays().add(startMarker);
+                startMarker.showInfoWindow();
+            }
+
+            if(drLat>0 && drLon>0)  {
+                GeoPoint driverPoint = new GeoPoint(drLat, drLon);
+                driverMarker = new Marker(map);
+                driverMarker.setPosition(driverPoint);
+                driverMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                driverMarker.setTitle("Ваше такси");
+                //startMarker.setInfoWindow(new MarkerInfoWindow(R.layout.bonuspack_bubble_black, map));
+                driverMarker.setDraggable(true);
+                //startMarker.setOnMarkerDragListener(new OnMarkerDragListenerDrawer());
+                map.getOverlays().add(driverMarker);
+                driverMarker.showInfoWindow();
+
+                if(startPoint!=null) {
+                    double latMax = startPoint.getLatitude()>driverPoint.getLatitude() ?
+                            startPoint.getLatitude() : driverPoint.getLatitude();
+                    double latMin = startPoint.getLatitude()<driverPoint.getLatitude() ?
+                            startPoint.getLatitude() : driverPoint.getLatitude();
+                    double lonMax = startPoint.getLongitude()>driverPoint.getLongitude() ?
+                            startPoint.getLongitude() : driverPoint.getLongitude();
+                    double lonMin = startPoint.getLongitude()<driverPoint.getLongitude() ?
+                            startPoint.getLongitude() : driverPoint.getLongitude();
+                    BoundingBox oBB = new BoundingBox(latMax+0.1, lonMax+0.1, latMin-0.1, lonMin-0.1);
+                    map.zoomToBoundingBox(oBB, false);
+                }
+
+            } else {
+                if(startPoint!=null)
+                    mapController.setCenter(startPoint);
+            }
+
+            //showMyMsg("OSM MAP SUCC!");
         }   catch(Exception e)  {
-            showMyMsg("showMeOnMap: "+e.getMessage());
+            showMyMsg("OSM MAP REPAINT ERROR!"+e.getMessage());
         }
+
     }
 
     public void startGPSCoordsProcessing(boolean gadr_alternative) {
@@ -715,11 +861,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        this.checkGPSPermission();
+    }
+
+    @Override
     protected void onStart() {
         super.onStart();
         try {
             Intent i = new Intent(getBaseContext(), TDClientService.class);
             startService(i);
+            this.checkGPSPermission();
             //this.showMyMsg("Запуск основной службы!");
         } catch(Exception ex)	{
             this.showMyMsg("Ошибка запуска сервиса!");
@@ -1165,23 +1318,32 @@ public class MainActivity extends AppCompatActivity {
                         editTextFromAdres.setText("");
                     }
                 });
+
                 orderButton.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             sendInfoBroadcast(ParamsAndConstants.ID_ACTION_WAKE_UP_NEO,"---");
-                            if(editTextFromAdres.getText().toString().length()>=3) {
-                                Message msg = new Message();
-                                msg.arg1 = ParamsAndConstants.MA_ORDERING;
-                                Bundle bnd = new Bundle();
-                                bnd.putString("msg_text", editTextFromAdres.getText().toString());
-                                bnd.putString("end_adr", editTextToAdres.getText().toString());
-                                msg.setData(bnd);
-                                handle.sendMessage(msg);
-                            }   else    {
+                            if(lastOrdersCount>0) {
                                 Toast toastErrorStartActivitySMS2 = Toast.
                                         makeText(getActivity(),
-                                                "Длина адреса меньше 3 символов!", Toast.LENGTH_LONG);
+                                                "Вами уже создан заказ!", Toast.LENGTH_LONG);
                                 toastErrorStartActivitySMS2.show();
+                            }
+                            else {
+                                if (editTextFromAdres.getText().toString().length() >= 3) {
+                                    Message msg = new Message();
+                                    msg.arg1 = ParamsAndConstants.MA_ORDERING;
+                                    Bundle bnd = new Bundle();
+                                    bnd.putString("msg_text", editTextFromAdres.getText().toString());
+                                    bnd.putString("end_adr", editTextToAdres.getText().toString());
+                                    msg.setData(bnd);
+                                    handle.sendMessage(msg);
+                                } else {
+                                    Toast toastErrorStartActivitySMS2 = Toast.
+                                            makeText(getActivity(),
+                                                    "Длина адреса меньше 3 символов!", Toast.LENGTH_LONG);
+                                    toastErrorStartActivitySMS2.show();
+                                }
                             }
                         }
                     });
@@ -1221,17 +1383,53 @@ public class MainActivity extends AppCompatActivity {
             }
             else if (getArguments().getInt(ARG_SECTION_NUMBER)==2) {
                 rootView = inflater.inflate(R.layout.map_layout, container, false);
-                wv = (WebView) rootView.findViewById(R.id.webView);
-                wv.getSettings().setJavaScriptEnabled(true);
-                //wv.setWebViewClient(new MyClient());
-                //wv.addJavascriptInterface(new JIFace(), "droid");
-                //wv.loadUrl("http://ya.ru/");
+
+                try {
+                    map = (MapView) rootView.findViewById(R.id.map);
+                    //map.setTileSource(TileSourceFactory.MAPNIK);
+                    //map.setBuiltInZoomControls(true);
+                    //map.setMultiTouchControls(true);
+                    //Toast toastErrorStartActivitySMS2 = Toast.
+                    //        makeText(getActivity(),
+                    //                "OSM MAP SUCC!", Toast.LENGTH_LONG);
+                    //toastErrorStartActivitySMS2.show();
+                }   catch(Exception e)  {
+                    Toast toastErrorStartActivitySMS2 = Toast.
+                            makeText(getActivity(),
+                                    "OSM MAP ERROR!"+e.getMessage(), Toast.LENGTH_LONG);
+                    toastErrorStartActivitySMS2.show();
+                }
 
             } else if(getArguments().getInt(ARG_SECTION_NUMBER)==3) {
                 rootView = inflater.inflate(R.layout.hist_layout, container, false);
             }
             fragmentViev = rootView;
             return rootView;
+        }
+
+        @Override
+        public void onActivityCreated(Bundle savedInstanceState) {
+            super.onActivityCreated(savedInstanceState);
+
+            if (getArguments().getInt(ARG_SECTION_NUMBER)==2) {
+                try {
+                    map.setTileSource(TileSourceFactory.MAPNIK);
+                    //map.setBuiltInZoomControls(true);
+                    map.setMultiTouchControls(true);
+                    map.getController().setZoom(15);
+                    map.getController().setCenter(new GeoPoint(ParamsAndConstants.defLat ,
+                            ParamsAndConstants.defLon));
+                    //Toast toastErrorStartActivitySMS2 = Toast.
+                    //        makeText(getActivity(),
+                    //                "OSM MAP SUCC CREATE!", Toast.LENGTH_LONG);
+                    //toastErrorStartActivitySMS2.show();
+                }   catch(Exception e)  {
+                    Toast toastErrorStartActivitySMS2 = Toast.
+                            makeText(getActivity(),
+                                    "OSM MAP ERROR!"+e.getMessage(), Toast.LENGTH_LONG);
+                    toastErrorStartActivitySMS2.show();
+                }
+            }
         }
 
         /** A method to download json data from url */
