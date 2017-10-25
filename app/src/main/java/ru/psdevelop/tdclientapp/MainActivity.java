@@ -146,6 +146,32 @@ public class MainActivity extends AppCompatActivity {
                 ActivityCompat.requestPermissions(this,
                         new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
                         TDClientService.TDC_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
+				AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+                builder.setTitle("ВЫХОД ИЗ ПРОГРАММЫ")
+                        .setMessage("При смене разрешения необходимо заново войти в приложение?")
+                        // кнопка "Yes", при нажатии на которую приложение закроется
+                        .setPositiveButton("Ок",
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog, int whichButton)
+                                    {
+                                        //if(!SOCKET_IN_SERVICE)	{
+                                        //    sendInfoBroadcast(TSI_STOP_NSOCK_SERVICE, "---");
+                                        //}
+                                        //userInterrupt = true;
+                                        finish();
+                                    }
+                                })
+                        /*.setNegativeButton("Отмена",
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog, int whichButton)
+                                    {
+
+                                    }
+                                })*/
+                        .show();
             }
         }
     }
