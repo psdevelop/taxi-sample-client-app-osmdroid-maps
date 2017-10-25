@@ -66,7 +66,8 @@ public class TDClientService extends Service implements LocationListener {
     private LocationManager myManager;
 
     public static boolean ENABLE_SMS_NOTIFICATIONS=false;
-	public static final int TDC_PERMISSIONS_REQUEST_READ_CONTACTS = 200;
+    public static final int TDC_PERMISSIONS_REQUEST_READ_CONTACTS = 200;
+    public static final int TDC_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 201;
 
     static SharedPreferences prefs=null;
     //PowerManager.WakeLock wakeLock;
@@ -137,7 +138,7 @@ public class TDClientService extends Service implements LocationListener {
     public void sendCCoords(String clat, String clon)   {
         try {
             if (auth) {
-                showToast("...");
+                //showToast("...");
 
                 //clId = clientId;//strToIntDef(prefs.getString("example_list", "-1"), -1);
                 phone = prefs.getString("example_text", "-1");
@@ -430,10 +431,12 @@ public class TDClientService extends Service implements LocationListener {
     }
 
     public String lastStatusData = "";
+    public String prevLastStatusData = "";
 
     public void parseStatus(String data)    {
         lastStatusData = data;
         sendInfoBroadcast( ParamsAndConstants.ID_ACTION_SHOW_STATUS_INFO, data);
+        prevLastStatusData = lastStatusData;
     }
 
     public void setStatusString(String status)  {
@@ -470,7 +473,8 @@ public class TDClientService extends Service implements LocationListener {
                             mSocket.emit("ident", resultJson.toString());
                         }
                         else {
-                            if (lastStatusData.length() > 0)
+                            if (lastStatusData.length() > 0 &&
+                                    !prevLastStatusData.equals(lastStatusData))
                                 parseStatus(lastStatusData);
                         }
                     } else {
