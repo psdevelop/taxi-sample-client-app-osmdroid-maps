@@ -109,15 +109,27 @@ public class MainActivity extends AppCompatActivity {
     static TextView textViewStatus=null;
     static String ordersInfo="";
 
-    public void checkGPSPermission()    {
-        // Here, thisActivity is the current activity
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
+    public void requestPermissions(String[] PERMISSIONS) {
+        ActivityCompat.requestPermissions(this, PERMISSIONS,
+                TDClientService.TDC_PERMISSIONS_REQUEST_READ_CONTACTS);
+    }
 
+    public void checkGPSPermission() {
+        // Here, thisActivity is the current activity
+        boolean denyLocation = ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED,
+                denyStorage = ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED;
+        if (denyLocation || denyStorage) {
             // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_COARSE_LOCATION)) {
+            if (    (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.ACCESS_COARSE_LOCATION) ||
+                        !denyLocation) &&
+                    (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE) ||
+                        !denyStorage)  ) {
 
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
@@ -126,53 +138,77 @@ public class MainActivity extends AppCompatActivity {
             } else {
 
                 // No explanation needed, we can request the permission.
-
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                        TDClientService.TDC_PERMISSIONS_REQUEST_READ_CONTACTS);
+                if (denyLocation && denyStorage) {
+                    requestPermissions(new String[]{
+                                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                            });
+                }
+                else if (denyLocation) {
+                    requestPermissions(new String[]{
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                            });
+                } else {
+                    requestPermissions(new String[]{
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    });
+                }
 
                 // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
                 // app-defined int constant. The callback method gets the
                 // result of the request.
             }
         }
+    }
 
-        if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            } else {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        TDClientService.TDC_PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
-				AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case TDClientService.TDC_PERMISSIONS_REQUEST_READ_CONTACTS: {
+                // If request is cancelled, the result arrays are empty.
+                if (    (grantResults.length == 1
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                    ||
+                        (grantResults.length == 2
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                        && grantResults[1] == PackageManager.PERMISSION_GRANTED) ) {
 
-                builder.setTitle("ВЫХОД ИЗ ПРОГРАММЫ")
-                        .setMessage("При смене разрешения необходимо заново войти в приложение?")
-                        // кнопка "Yes", при нажатии на которую приложение закроется
-                        .setPositiveButton("Ок",
-                                new DialogInterface.OnClickListener()
-                                {
-                                    public void onClick(DialogInterface dialog, int whichButton)
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+                    builder.setTitle("ВЫХОД ИЗ ПРОГРАММЫ")
+                            .setMessage("При смене разрешения необходимо заново войти в приложение!")
+                            // кнопка "Yes", при нажатии на которую приложение закроется
+                            .setPositiveButton("Ок",
+                                    new DialogInterface.OnClickListener()
                                     {
-                                        //if(!SOCKET_IN_SERVICE)	{
-                                        //    sendInfoBroadcast(TSI_STOP_NSOCK_SERVICE, "---");
-                                        //}
-                                        //userInterrupt = true;
-                                        finish();
-                                    }
-                                })
-                        /*.setNegativeButton("Отмена",
-                                new DialogInterface.OnClickListener()
-                                {
-                                    public void onClick(DialogInterface dialog, int whichButton)
-                                    {
+                                        public void onClick(DialogInterface dialog, int whichButton)
+                                        {
+                                            finish();
+                                        }
+                                    })
+                            .show();
 
-                                    }
-                                })*/
-                        .show();
+                } else {
+
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+                    builder.setTitle("ПРЕДУПРЕЖДЕНИЕ")
+                            .setMessage("Вами не разрешены доступы к геолокации и/или памяти. Функции карт и/или определения местоположения не будут работать пока вы не разрешите их в настройках! Необходимо заново войти в приложение! ")
+                            // кнопка "Yes", при нажатии на которую приложение закроется
+                            .setPositiveButton("Ок",
+                                    new DialogInterface.OnClickListener()
+                                    {
+                                        public void onClick(DialogInterface dialog, int whichButton)
+                                        {
+                                            finish();
+                                        }
+                                    })
+                            .show();
+                }
+                return;
             }
+
         }
     }
 
@@ -258,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
-        checkGPSPermission();
+        //checkGPSPermission();
         //mSectionsPagerAdapter.
 
         tabLayout = (TabLayout) findViewById(R.id.tabs);
@@ -270,11 +306,12 @@ public class MainActivity extends AppCompatActivity {
                 //tab.getIcon().setAlpha(255);
                 //showMyMsg(tab.getPosition()+"");
                 sendInfoBroadcast(ParamsAndConstants.ID_ACTION_WAKE_UP_NEO, "---");
-                if (tab.getPosition() == 1)
-                    if (hasMeGPSDetecting||hasMeGAdrDetecting)
+                if (tab.getPosition() == 1) {
+                    if (hasMeGPSDetecting || hasMeGAdrDetecting)
                         showMeOnMap();
                     else
                         startGPSCoordsProcessing(true);
+                }
             }
 
             @Override
@@ -349,7 +386,7 @@ public class MainActivity extends AppCompatActivity {
                                         showGMAddressIfEmpty(resultJson.getString("odt"+i).replace("(ONLINE)",""));
                                     } catch (Exception e) { }
                                 }
-								
+
                                 if(i==0) {
                                     try {
                                         showEndAddressIfEmpty(resultJson.getString("oena"+i).replace("(ONLINE)",""));
@@ -661,7 +698,7 @@ public class MainActivity extends AppCompatActivity {
             showMyMsg("showGMAddress: "+e.getMessage());
         }
     }
-	
+
     public void showEndAddressIfEmpty(String txt)   {
         try {
             if(mSectionsPagerAdapter.firstTab.editTextToAdres.getText().length()<=0 ||
@@ -887,6 +924,7 @@ public class MainActivity extends AppCompatActivity {
                                         SharedPreferences.Editor edt = prefs.edit();
                                         edt.putString("example_text",input_text.getText().toString());
                                         edt.commit();
+                                        checkGPSPermission();
                                     } catch (Exception pex) {
                                         showMyMsg("Неудачное присваивание настроек PHONE_NUM от клиента! " +
                                                 pex.getMessage());
@@ -905,7 +943,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        this.checkGPSPermission();
+        //this.checkGPSPermission();
     }
 
     @Override
@@ -914,7 +952,9 @@ public class MainActivity extends AppCompatActivity {
         try {
             Intent i = new Intent(getBaseContext(), TDClientService.class);
             startService(i);
-            this.checkGPSPermission();
+            if (prefs.getString("example_text", "").length() == 10) {
+                this.checkGPSPermission();
+            }
             //this.showMyMsg("Запуск основной службы!");
         } catch(Exception ex)	{
             this.showMyMsg("Ошибка запуска сервиса!");
