@@ -1407,12 +1407,33 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(View v) {
                         sendInfoBroadcast(ParamsAndConstants.ID_ACTION_WAKE_UP_NEO,"---");
                         if(lastOrdersCount>0) {
-                            Message msg = new Message();
-                            msg.arg1 = ParamsAndConstants.MA_CANCELING;
-                            Bundle bnd = new Bundle();
-                            bnd.putString("msg_text", "ddddd");
-                            msg.setData(bnd);
-                            handle.sendMessage(msg);
+                            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+
+                            builder.setTitle("ПОДТВЕРЖДЕНИЕ")
+                                    .setMessage("Вы хотите отменить заказ?")
+                                    // кнопка "Yes", при нажатии на которую приложение закроется
+                                    .setPositiveButton("Ок",
+                                            new DialogInterface.OnClickListener()
+                                            {
+                                                public void onClick(DialogInterface dialog, int whichButton)
+                                                {
+                                                    Message msg = new Message();
+                                                    msg.arg1 = ParamsAndConstants.MA_CANCELING;
+                                                    Bundle bnd = new Bundle();
+                                                    bnd.putString("msg_text", "ddddd");
+                                                    msg.setData(bnd);
+                                                    handle.sendMessage(msg);
+                                                }
+                                            })
+                                    .setNegativeButton("Отмена",
+                                            new DialogInterface.OnClickListener()
+                                            {
+                                                public void onClick(DialogInterface dialog, int whichButton)
+                                                {
+
+                                                }
+                                            })
+                                    .show();
                         }   else    {
                             Toast toastErrorStartActivitySMS2 = Toast.
                                     makeText(getActivity(),
