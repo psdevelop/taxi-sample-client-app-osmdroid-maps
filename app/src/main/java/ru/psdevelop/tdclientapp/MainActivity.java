@@ -11,10 +11,12 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -114,9 +116,27 @@ public class MainActivity extends AppCompatActivity {
                 TDClientService.TDC_PERMISSIONS_REQUEST_READ_CONTACTS);
     }
 
+    public void configurePermissionsRequest(boolean denyLocation, boolean denyStorage) {
+        if (denyLocation && denyStorage) {
+            requestPermissions(new String[]{
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+            });
+        }
+        else if (denyLocation) {
+            requestPermissions(new String[]{
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            });
+        } else {
+            requestPermissions(new String[]{
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+            });
+        }
+    }
+
     public void checkGPSPermission() {
         // Here, thisActivity is the current activity
-        boolean denyLocation = ContextCompat.checkSelfPermission(this,
+        final boolean denyLocation = ContextCompat.checkSelfPermission(this,
                     Manifest.permission.ACCESS_COARSE_LOCATION)
                         != PackageManager.PERMISSION_GRANTED,
                 denyStorage = ContextCompat.checkSelfPermission(this,
@@ -131,32 +151,25 @@ public class MainActivity extends AppCompatActivity {
                         Manifest.permission.WRITE_EXTERNAL_STORAGE) ||
                         !denyStorage)  ) {
 
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+                builder.setTitle("Внимание")
+                        .setMessage("Вами не разрешены доступы к геолокации и/или памяти. Функции карт и/или определения местоположения не будут работать пока вы не разрешите их!")
+                        // кнопка "Yes", при нажатии на которую приложение закроется
+                        .setPositiveButton("Ок",
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog, int whichButton)
+                                    {
+                                        configurePermissionsRequest(denyLocation, denyStorage);
+                                    }
+                                })
+                        .show();
 
             } else {
 
                 // No explanation needed, we can request the permission.
-                if (denyLocation && denyStorage) {
-                    requestPermissions(new String[]{
-                                    Manifest.permission.ACCESS_COARSE_LOCATION,
-                                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                            });
-                }
-                else if (denyLocation) {
-                    requestPermissions(new String[]{
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                            });
-                } else {
-                    requestPermissions(new String[]{
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE
-                    });
-                }
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
+                configurePermissionsRequest(denyLocation, denyStorage);
             }
         }
     }
@@ -190,7 +203,6 @@ public class MainActivity extends AppCompatActivity {
                             .show();
 
                 } else {
-
                     AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
                     builder.setTitle("ПРЕДУПРЕЖДЕНИЕ")
@@ -201,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
                                     {
                                         public void onClick(DialogInterface dialog, int whichButton)
                                         {
-                                            finish();
+                                            openApplicationSettings();
                                         }
                                     })
                             .show();
@@ -210,6 +222,22 @@ public class MainActivity extends AppCompatActivity {
             }
 
         }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    public void openApplicationSettings() {
+        Intent appSettingsIntent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:" + getPackageName()));
+        startActivityForResult(appSettingsIntent, TDClientService.PERMISSION_APP_CODE);
+        finish();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == TDClientService.PERMISSION_APP_CODE) {
+
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     public static boolean checkString(String str) {
