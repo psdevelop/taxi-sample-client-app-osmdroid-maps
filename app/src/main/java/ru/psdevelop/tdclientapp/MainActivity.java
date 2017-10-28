@@ -775,10 +775,20 @@ public class MainActivity extends AppCompatActivity {
     public void showMeOnMap()   {
         try {
 
+            if (lastLat == ParamsAndConstants.defLat &&
+                    lastLon == ParamsAndConstants.defLon) {
+                showMyMsg("Используются координаты по умолчанию: неточный адрес или не работает GPS!");
+            }
+
             if(!hasMeGAdrDetecting && lastLat>0 && lastLon>0)
                 sendGeocodeHTTPRequest( lastLat, lastLon);
 
             if(startMarker!=null)
+                try {
+                    startMarker.getInfoWindow().close();
+                } catch(Exception e) {
+
+                }
                 try {
                     map.getOverlays().remove(startMarker);
                 } catch(Exception e) {
@@ -787,6 +797,11 @@ public class MainActivity extends AppCompatActivity {
             startMarker = null;
 
             if(driverMarker!=null)
+                try {
+                    driverMarker.getInfoWindow().close();
+                } catch(Exception e) {
+
+                }
                 try {
                     map.getOverlays().remove(driverMarker);
                 } catch(Exception e) {
@@ -848,7 +863,7 @@ public class MainActivity extends AppCompatActivity {
 
             //showMyMsg("OSM MAP SUCC!");
         }   catch(Exception e)  {
-            showMyMsg("OSM MAP REPAINT ERROR!"+e.getMessage());
+            showMyMsg("Ошибка отрисовки карты!"+e.getMessage());
         }
 
     }
@@ -1165,8 +1180,7 @@ public class MainActivity extends AppCompatActivity {
                     //e.printStackTrace();
                 }
 
-                if(hasGAdrLat&&hasGAdrLon)
-                if(activeCoordSearch)    {
+                if(hasGAdrLat&&hasGAdrLon&&lastRevLon>0&&lastRevLat>0&&activeCoordSearch) {
                     lastLon=lastRevLon;
                     lastLat=lastRevLat;
                     Intent bintent = new Intent(INFO_ACTION);
@@ -1183,7 +1197,10 @@ public class MainActivity extends AppCompatActivity {
                     bnd.putString("msg_text", "===");
                     msg.setData(bnd);
                     handle.sendMessage(msg);
+                } else {
+                    showMsg("Не найдена координата для введенного адреса!");
                 }
+
             }
 
             public void showMsg(String msgtext)    {
