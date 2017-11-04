@@ -19,6 +19,7 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -109,6 +110,7 @@ public class MainActivity extends AppCompatActivity {
     static WebView wv;
     static MapView map;
     static TextView textViewStatus=null;
+    static TextView mapStatusView = null, driverInfoMapView = null;
     static String ordersInfo="";
 
     public void requestPermissions(String[] PERMISSIONS) {
@@ -359,13 +361,14 @@ public class MainActivity extends AppCompatActivity {
                     showMyMsg(msg.getData().
                             getString("msg_text"));
                 } else if (msg.arg1 == ParamsAndConstants.MA_SET_STAT_TEXTVIEW) {
-                    setTextViewStatus(msg.getData().
-                            getString(ParamsAndConstants.MSG_TEXT));
+                    String orderStatus = msg.getData().
+                            getString(ParamsAndConstants.MSG_TEXT);
+                    setTextViewStatus(orderStatus, orderStatus, "");
                 }
                 else if (msg.arg1 == ParamsAndConstants.SHOW_STATUS_STRING) {
                     try {
-                    setTextViewStatus(msg.getData().
-                            getString("msg_text"));
+                        String status = msg.getData().getString("msg_text");
+                        setTextViewStatus(status, status, "");
                     }   catch(Exception e)  {
                         showMyMsg("SHOW_STATUS_STRING!"+e.getMessage());
                     }
@@ -383,7 +386,8 @@ public class MainActivity extends AppCompatActivity {
                         if(resultJson.has("ocn")) {
                             drivers_markers="";
                             //showMyMsg("Заказов " + resultJson.getInt("ocn"));
-                            String ords_dt = "";
+                            String ords_dt = "", mapOrderInfo = "",
+                                mapDriverInfo = "";
                             String prevOrdersInfo = ordersInfo;
                             ordersInfo = "";
 
@@ -442,7 +446,7 @@ public class MainActivity extends AppCompatActivity {
                                 ords_dt = ords_dt +" ";
                                 if(rcst==-2)	{
                                     //if(rcst==-2)
-                                    ords_dt = ords_dt + "извините, нет свободных машин";
+                                    ords_dt = ords_dt + " извините, нет свободных машин";
                                 }
                                 else {
                                     if (rcst == 2)
@@ -450,16 +454,16 @@ public class MainActivity extends AppCompatActivity {
                                     if (resultJson.has("ors" + i)) {
                                         ordersInfo = ordersInfo + "status" + resultJson.getInt("ors" + i);
                                         if (resultJson.getInt("ors" + i) == 0)
-                                            ords_dt = ords_dt + "ищем машину";
+                                            ords_dt = ords_dt + " ищем машину";
                                         if (resultJson.getInt("ors" + i) == 8)
-                                            ords_dt = ords_dt + "за Вами отправлена машина";
+                                            ords_dt = ords_dt + " за Вами отправлена машина";
                                         if (resultJson.has("opl" + i))
                                         if (resultJson.getInt("opl" + i) == 1 && resultJson.getInt("ors" + i) == 8) {
-                                            ords_dt = ords_dt + "ожидает выходите";
+                                            ords_dt = ords_dt + " ожидает выходите";
                                             ordersInfo = ordersInfo + "opl";
                                         }
                                         if (resultJson.getInt("ors" + i) == 26)
-                                            ords_dt = ords_dt + "дан отчет " + resultJson.getString("osumm" + i);
+                                            ords_dt = ords_dt + " дан отчет " + resultJson.getString("osumm" + i);
                                         if (resultJson.has("tmh" + i))
                                         if (resultJson.getString("tmh" + i).length() > 0 && resultJson.getInt("ors" + i) == 8)
                                             ords_dt = ords_dt + ">на выполнении (таксометр активен)";
@@ -478,10 +482,21 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         }
 
+                                        if (resultJson.has("oppr" + i)) {
+                                            if (resultJson.getString("oppr" + i).length() > 0) {
+                                                ords_dt = ords_dt + " Стоимость: " + resultJson.getString("oppr" + i);
+                                            }
+                                        }
+
+                                        mapOrderInfo = ords_dt;
+
                                         if (resultJson.has("dphn" + i)) {
                                             if (resultJson.getString("dphn" + i).length() > 0) {
-                                                ords_dt = ords_dt + " Телефон водителя: " + resultJson.getString("dphn" + i);
-                                                ordersInfo = ordersInfo + resultJson.getString("dphn" + i);
+                                                String driverPhone = resultJson.getString("dphn" + i);
+                                                ordersInfo = ordersInfo + driverPhone;
+                                                driverPhone = " Телефон водителя: " + driverPhone;
+                                                ords_dt += driverPhone;
+                                                mapDriverInfo += driverPhone;
                                             }
                                         }
 
@@ -521,7 +536,9 @@ public class MainActivity extends AppCompatActivity {
                             }
                             try {
                                 //showMyMsg("У вас Заказов всего " + resultJson.getString("ocn") + ords_dt);
-                                setTextViewStatus("У вас Заказов всего " + resultJson.getString("ocn")+": " + ords_dt);
+                                setTextViewStatus("У вас Заказов всего " + resultJson.getString("ocn")+": " + ords_dt,
+                                        mapOrderInfo.length() > 0 ? mapOrderInfo : "Нет активных заказов",
+                                        mapDriverInfo);
                             }   catch(Exception e)  {
 
                             }
@@ -737,11 +754,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void setTextViewStatus(String txt)   {
+    public void setTextViewStatus(String txt, String orderInf, String driverInfo)   {
         try {
             textViewStatus.setText(txt);
         }   catch(Exception e)  {
             showMyMsg("setTextViewStatus: "+e.getMessage());
+        }
+        try {
+            mapStatusView.setText(orderInf);
+            driverInfoMapView.setText(driverInfo);
+        }   catch(Exception e)  {
+            showMyMsg("setMapsViewStatus error: "+e.getMessage());
         }
     }
 
@@ -777,7 +800,20 @@ public class MainActivity extends AppCompatActivity {
 
             if (lastLat == ParamsAndConstants.defLat &&
                     lastLon == ParamsAndConstants.defLon) {
-                showMyMsg("Используются координаты по умолчанию: неточный адрес или не работает GPS!");
+                //showMyMsg("Используются координаты по умолчанию: неточный адрес или не работает GPS!");
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+                builder.setTitle("ВНИМАНИЕ")
+                        .setMessage("Используются координаты нас. пункта по умолчанию: неточный адрес или не работает GPS!")
+                        // кнопка "Yes", при нажатии на которую приложение закроется
+                        .setPositiveButton("Ок",
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog, int whichButton)
+                                    {
+                                    }
+                                })
+                        .show();
             }
 
             if(!hasMeGAdrDetecting && lastLat>0 && lastLon>0)
@@ -822,7 +858,7 @@ public class MainActivity extends AppCompatActivity {
                 startMarker.setPosition(startPoint);
                 startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
                 startMarker.setTitle((hasMeGAdrDetecting ? lastAdr : "Вы здесь!"));
-                //startMarker.setIcon(getResources().getDrawable(R.drawable.marker_kml_point).mutate());
+                startMarker.setIcon(getResources().getDrawable(R.drawable.person).mutate());
                 //startMarker.setImage(getResources().getDrawable(R.drawable.ic_launcher));
                 startMarker.setInfoWindow(new MarkerInfoWindow(R.layout.bonuspack_bubble_black, map));
                 startMarker.setDraggable(true);
@@ -837,6 +873,8 @@ public class MainActivity extends AppCompatActivity {
                 driverMarker.setPosition(driverPoint);
                 driverMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
                 driverMarker.setTitle("Ваше такси");
+                driverMarker.setIcon(getResources().getDrawable(R.drawable.taxi2).mutate());
+                //driverMarker.setImage(getResources().getDrawable(R.drawable.ic_launcher));
                 //startMarker.setInfoWindow(new MarkerInfoWindow(R.layout.bonuspack_bubble_black, map));
                 driverMarker.setDraggable(true);
                 //startMarker.setOnMarkerDragListener(new OnMarkerDragListenerDrawer());
@@ -852,7 +890,7 @@ public class MainActivity extends AppCompatActivity {
                             startPoint.getLongitude() : driverPoint.getLongitude();
                     double lonMin = startPoint.getLongitude()<driverPoint.getLongitude() ?
                             startPoint.getLongitude() : driverPoint.getLongitude();
-                    BoundingBox oBB = new BoundingBox(latMax+0.1, lonMax+0.1, latMin-0.1, lonMin-0.1);
+                    BoundingBox oBB = new BoundingBox(latMax+0.01, lonMax+0.01, latMin-0.01, lonMin-0.01);
                     map.zoomToBoundingBox(oBB, false);
                 }
 
@@ -1342,7 +1380,8 @@ public class MainActivity extends AppCompatActivity {
     public static class PlaceholderFragment extends Fragment {
         private static final String ARG_SECTION_NUMBER = "section_number";
         public View fragmentViev;
-        Button orderButton, cancelButton, gpsDetectButton, clearBtn;
+        Button orderButton, cancelButton, gpsDetectButton,
+                clearBtn, cancelMapButton;
         AutoCompleteTextView editTextFromAdres;
         EditText editTextToAdres;
 
@@ -1373,6 +1412,43 @@ public class MainActivity extends AppCompatActivity {
             bnd.putInt(ParamsAndConstants.TYPE, action_id);
             msg.setData(bnd);
             handle.sendMessage(msg);
+        }
+
+        public void sendCancelRequest(FragmentActivity FActivity) {
+            if(lastOrdersCount>0) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(FActivity);
+
+                builder.setTitle("ПОДТВЕРЖДЕНИЕ")
+                        .setMessage("Вы хотите отменить заказ?")
+                        // кнопка "Yes", при нажатии на которую приложение закроется
+                        .setPositiveButton("Ок",
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog, int whichButton)
+                                    {
+                                        Message msg = new Message();
+                                        msg.arg1 = ParamsAndConstants.MA_CANCELING;
+                                        Bundle bnd = new Bundle();
+                                        bnd.putString("msg_text", "ddddd");
+                                        msg.setData(bnd);
+                                        handle.sendMessage(msg);
+                                    }
+                                })
+                        .setNegativeButton("Отмена",
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog, int whichButton)
+                                    {
+
+                                    }
+                                })
+                        .show();
+            }   else    {
+                Toast toastErrorStartActivitySMS2 = Toast.
+                        makeText(FActivity,
+                                "Нет активных заказов!", Toast.LENGTH_LONG);
+                toastErrorStartActivitySMS2.show();
+            }
         }
 
         /*class JIFace {
@@ -1491,40 +1567,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View v) {
                         sendInfoBroadcast(ParamsAndConstants.ID_ACTION_WAKE_UP_NEO,"---");
-                        if(lastOrdersCount>0) {
-                            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-
-                            builder.setTitle("ПОДТВЕРЖДЕНИЕ")
-                                    .setMessage("Вы хотите отменить заказ?")
-                                    // кнопка "Yes", при нажатии на которую приложение закроется
-                                    .setPositiveButton("Ок",
-                                            new DialogInterface.OnClickListener()
-                                            {
-                                                public void onClick(DialogInterface dialog, int whichButton)
-                                                {
-                                                    Message msg = new Message();
-                                                    msg.arg1 = ParamsAndConstants.MA_CANCELING;
-                                                    Bundle bnd = new Bundle();
-                                                    bnd.putString("msg_text", "ddddd");
-                                                    msg.setData(bnd);
-                                                    handle.sendMessage(msg);
-                                                }
-                                            })
-                                    .setNegativeButton("Отмена",
-                                            new DialogInterface.OnClickListener()
-                                            {
-                                                public void onClick(DialogInterface dialog, int whichButton)
-                                                {
-
-                                                }
-                                            })
-                                    .show();
-                        }   else    {
-                            Toast toastErrorStartActivitySMS2 = Toast.
-                                    makeText(getActivity(),
-                                            "Нет активных заказов!", Toast.LENGTH_LONG);
-                            toastErrorStartActivitySMS2.show();
-                        }
+                        sendCancelRequest(getActivity());
                     }
                 });
 
@@ -1532,15 +1575,23 @@ public class MainActivity extends AppCompatActivity {
             else if (getArguments().getInt(ARG_SECTION_NUMBER)==2) {
                 rootView = inflater.inflate(R.layout.map_layout, container, false);
 
+                mapStatusView = (TextView) rootView.findViewById(R.id.mapStatusView);
+                driverInfoMapView = (TextView) rootView.findViewById(R.id.driverInfoMapView);
+
+                cancelMapButton = (Button)rootView.findViewById(R.id.mapCancelButton);
+                cancelMapButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        sendInfoBroadcast(ParamsAndConstants.ID_ACTION_WAKE_UP_NEO,"---");
+                        sendCancelRequest(getActivity());
+                    }
+                });
+
                 try {
                     map = (MapView) rootView.findViewById(R.id.map);
                     //map.setTileSource(TileSourceFactory.MAPNIK);
                     //map.setBuiltInZoomControls(true);
                     //map.setMultiTouchControls(true);
-                    //Toast toastErrorStartActivitySMS2 = Toast.
-                    //        makeText(getActivity(),
-                    //                "OSM MAP SUCC!", Toast.LENGTH_LONG);
-                    //toastErrorStartActivitySMS2.show();
                 }   catch(Exception e)  {
                     Toast toastErrorStartActivitySMS2 = Toast.
                             makeText(getActivity(),
