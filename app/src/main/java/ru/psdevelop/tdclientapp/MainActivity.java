@@ -189,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED
                         && grantResults[1] == PackageManager.PERMISSION_GRANTED) ) {
 
-                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    /*AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
                     builder.setTitle("ВЫХОД ИЗ ПРОГРАММЫ")
                             .setMessage("При смене разрешения необходимо заново войти в приложение!")
@@ -202,7 +202,9 @@ public class MainActivity extends AppCompatActivity {
                                             finish();
                                         }
                                     })
-                            .show();
+                            .show();*/
+					finish();
+                    startActivity(getIntent());
 
                 } else {
                     AlertDialog.Builder builder = new AlertDialog.Builder(this);
