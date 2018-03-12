@@ -103,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
     static boolean maoRequest=false;
     static String maoSadr="", maoEadr="";
     static boolean hasOrderRequest = false;
+    static boolean useSMSInRegistration = false;
 
     private SectionsPagerAdapter mSectionsPagerAdapter;
 
@@ -1003,6 +1004,11 @@ public class MainActivity extends AppCompatActivity {
                     .setPositiveButton("OK",
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int whichButton) {
+                                    if (useSMSInRegistration) {
+                                        checkSMSRegistrationCode(input_text.getText().toString());
+                                        return;
+                                    }
+
                                     try {
                                         SharedPreferences.Editor edt = prefs.edit();
                                         edt.putString("example_text",input_text.getText().toString());
@@ -1021,6 +1027,42 @@ public class MainActivity extends AppCompatActivity {
             showMyMsg("Ошибка вывода диалога: " + e.getMessage());
         }
 
+    }
+
+    public void checkSMSRegistrationCode(String phoneNumber) {
+        try	{
+            AlertDialog.Builder inpBuilder = new AlertDialog.Builder(this);
+
+            final EditText inputText = new EditText(this);
+            inputText.setInputType(InputType.TYPE_CLASS_NUMBER);
+            final String checkPhoneNumber = phoneNumber;
+
+            inpBuilder.setView(inputText);
+            inpBuilder.setTitle("Введите код подтверждения")
+                    .setMessage("Подтверждение номера")
+                    // кнопка "Yes", при нажатии на которую приложение закроется
+                    .setPositiveButton("OK",
+                            new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int whichButton) {
+                                    phoneDlgIsOpened=false;
+                                    String inputedCode = inputText.getText().toString();
+                                    try {
+                                        SharedPreferences.Editor edt = prefs.edit();
+                                        edt.putString("example_text", checkPhoneNumber);
+                                        edt.commit();
+                                        checkGPSPermission();
+                                    } catch (Exception pex) {
+                                        showMyMsg("Неудачное присваивание настроек PHONE_NUM от клиента! " +
+                                                pex.getMessage());
+                                    }
+
+
+                                }
+                            }).show();
+
+        }	catch(Exception e)	{
+            showMyMsg("Ошибка вывода диалога: " + e.getMessage());
+        }
     }
 
     @Override
