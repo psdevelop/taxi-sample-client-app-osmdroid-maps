@@ -104,6 +104,9 @@ public class MainActivity extends AppCompatActivity {
     static String maoSadr="", maoEadr="";
     static boolean hasOrderRequest = false;
     static boolean useSMSInRegistration = false;
+    public static final String REQUEST_METHOD = "GET";
+    public static final int READ_TIMEOUT = 25000;
+    public static final int CONNECTION_TIMEOUT = 25000;
 
     private SectionsPagerAdapter mSectionsPagerAdapter;
 
@@ -1004,21 +1007,28 @@ public class MainActivity extends AppCompatActivity {
                     .setPositiveButton("OK",
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int whichButton) {
+                                    String phoneNumber = input_text.getText().toString();
+                                    phoneDlgIsOpened=false;
+
+                                    if (phoneNumber.length() != 10) {
+                                        showMyMsg("Длина номера не равна 10!");
+                                        return;
+                                    }
+
                                     if (useSMSInRegistration) {
-                                        checkSMSRegistrationCode(input_text.getText().toString());
+                                        checkSMSRegistrationCode(phoneNumber);
                                         return;
                                     }
 
                                     try {
                                         SharedPreferences.Editor edt = prefs.edit();
-                                        edt.putString("example_text",input_text.getText().toString());
+                                        edt.putString("example_text", phoneNumber);
                                         edt.commit();
                                         checkGPSPermission();
                                     } catch (Exception pex) {
                                         showMyMsg("Неудачное присваивание настроек PHONE_NUM от клиента! " +
                                                 pex.getMessage());
                                     }
-                                    phoneDlgIsOpened=false;
 
                                 }
                             }).show();
@@ -1030,6 +1040,46 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void checkSMSRegistrationCode(String phoneNumber) {
+        final String regCode = "5247";
+        String stringUrl = "https://smsc.ru/sys/send.php?login=" +
+                "&psw=&phones=+7" + phoneNumber +
+                "&mes=Registration%20code:%20" + regCode;
+        String result;
+        String inputLine;
+        try {
+            //Create a URL object holding our url
+            //
+            URL myUrl = new URL(stringUrl);
+            //Create a connection
+            HttpURLConnection connection = (HttpURLConnection)
+                    myUrl.openConnection();
+            //Set methods and timeouts
+            connection.setRequestMethod(REQUEST_METHOD);
+            connection.setReadTimeout(READ_TIMEOUT);
+            connection.setConnectTimeout(CONNECTION_TIMEOUT);
+
+            //Connect to our url
+            connection.connect();
+            //Create a new InputStreamReader
+            InputStreamReader streamReader = new
+                    InputStreamReader(connection.getInputStream());
+            //Create a new buffered reader and String Builder
+            BufferedReader reader = new BufferedReader(streamReader);
+            StringBuilder stringBuilder = new StringBuilder();
+            //Check if the line we are reading is not null
+            while((inputLine = reader.readLine()) != null){
+                stringBuilder.append(inputLine);
+            }
+            //Close our InputStream and Buffered reader
+            reader.close();
+            streamReader.close();
+            //Set our result equal to our stringBuilder
+            result = stringBuilder.toString();
+        }
+        catch(Exception e){
+            showMyMsg("Ошибка запроса SMS c кодом: " + e.getMessage());
+        }
+
         try	{
             AlertDialog.Builder inpBuilder = new AlertDialog.Builder(this);
 
@@ -1045,7 +1095,11 @@ public class MainActivity extends AppCompatActivity {
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int whichButton) {
                                     phoneDlgIsOpened=false;
-                                    String inputedCode = inputText.getText().toString();
+                                    if (!inputText.getText().toString().equals(regCode)) {
+                                        showMyMsg("Неверный код подтверждения!");
+                                        return;
+                                    }
+
                                     try {
                                         SharedPreferences.Editor edt = prefs.edit();
                                         edt.putString("example_text", checkPhoneNumber);
