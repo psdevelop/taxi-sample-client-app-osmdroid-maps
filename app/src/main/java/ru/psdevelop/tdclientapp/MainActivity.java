@@ -1003,15 +1003,15 @@ public class MainActivity extends AppCompatActivity {
             inp_builder.setView(input_text);
             inp_builder.setTitle("ВВОД ДАННЫХ")
                     .setMessage(msg)
-                            // кнопка "Yes", при нажатии на которую приложение закроется
+                    // кнопка "Yes", при нажатии на которую приложение закроется
                     .setPositiveButton("OK",
                             new DialogInterface.OnClickListener() {
                                 public void onClick(DialogInterface dialog, int whichButton) {
                                     String phoneNumber = input_text.getText().toString();
-                                    phoneDlgIsOpened=false;
 
                                     if (phoneNumber.length() != 10) {
                                         showMyMsg("Длина номера не равна 10!");
+                                        phoneDlgIsOpened=false;
                                         return;
                                     }
 
@@ -1019,6 +1019,7 @@ public class MainActivity extends AppCompatActivity {
                                         checkSMSRegistrationCode(phoneNumber);
                                         return;
                                     }
+                                    phoneDlgIsOpened=false;
 
                                     try {
                                         SharedPreferences.Editor edt = prefs.edit();
@@ -1039,46 +1040,17 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void checkSMSRegistrationCode(String phoneNumber) {
-        final String regCode = "5247";
-        String stringUrl = "https://smsc.ru/sys/send.php?login=" +
-                "&psw=&phones=+7" + phoneNumber +
-                "&mes=Registration%20code:%20" + regCode;
-        String result;
-        String inputLine;
-        try {
-            //Create a URL object holding our url
-            //
-            URL myUrl = new URL(stringUrl);
-            //Create a connection
-            HttpURLConnection connection = (HttpURLConnection)
-                    myUrl.openConnection();
-            //Set methods and timeouts
-            connection.setRequestMethod(REQUEST_METHOD);
-            connection.setReadTimeout(READ_TIMEOUT);
-            connection.setConnectTimeout(CONNECTION_TIMEOUT);
+    public String getRegistrationCode() {
+        return  "" + (1000 + (int) (Math.random()*(9999 - 1000)));
+    }
 
-            //Connect to our url
-            connection.connect();
-            //Create a new InputStreamReader
-            InputStreamReader streamReader = new
-                    InputStreamReader(connection.getInputStream());
-            //Create a new buffered reader and String Builder
-            BufferedReader reader = new BufferedReader(streamReader);
-            StringBuilder stringBuilder = new StringBuilder();
-            //Check if the line we are reading is not null
-            while((inputLine = reader.readLine()) != null){
-                stringBuilder.append(inputLine);
-            }
-            //Close our InputStream and Buffered reader
-            reader.close();
-            streamReader.close();
-            //Set our result equal to our stringBuilder
-            result = stringBuilder.toString();
-        }
-        catch(Exception e){
-            showMyMsg("Ошибка запроса SMS c кодом: " + e.getMessage());
-        }
+    public void checkSMSRegistrationCode(String phoneNumber) {
+        final String regCode = getRegistrationCode();
+        String stringUrl = "https://smsc.ru/sys/send.php?login=Orange56" +
+                "&psw=Qweasdzxc123&phones=+7" + phoneNumber + "&mes=" +
+                "Kod: " + regCode;
+
+        sendHttpRequest(stringUrl);
 
         try	{
             AlertDialog.Builder inpBuilder = new AlertDialog.Builder(this);
@@ -1117,6 +1089,50 @@ public class MainActivity extends AppCompatActivity {
         }	catch(Exception e)	{
             showMyMsg("Ошибка вывода диалога: " + e.getMessage());
         }
+    }
+
+    public void sendHttpRequest(String stringUrl) {
+        final String requestUrl = stringUrl;
+        Runnable httpRunnable = new Runnable() {
+
+            public void showMsg(String msgText)    {
+                Message msg = new Message();
+                msg.arg1 = ParamsAndConstants.SHOW_MESSAGE_TOAST;
+                Bundle bnd = new Bundle();
+                bnd.putString("msg_text", msgText);
+                msg.setData(bnd);
+                handle.sendMessage(msg);
+            }
+
+            @Override
+            public void run(){
+                try {
+                    URL obj = new URL(requestUrl);
+                    HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+
+                    con.setRequestMethod("GET");
+                    con.setRequestProperty("User-Agent", "Mozilla/5.0");
+
+                    int responseCode = con.getResponseCode();
+
+                    BufferedReader in = new BufferedReader(
+                            new InputStreamReader(con.getInputStream()));
+                    String inputLine;
+                    StringBuffer response = new StringBuffer();
+
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+
+                }
+                catch (Exception e) {
+                    showMsg("Ошибка HTTP-запроса! "+e.getMessage());
+                }
+            }
+        };
+
+        new Thread(httpRunnable).start();
     }
 
     @Override
