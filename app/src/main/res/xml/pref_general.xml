@@ -32,4 +32,15 @@
         android:title="@string/pref_title_add_friends_to_messages"
         android:enabled="false" />
 
+    <EditTextPreference
+        android:capitalize="words"
+        android:defaultValue="0"
+        android:inputType="number"
+        android:key="sms_regs_check_attempts_count"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="Попыток подтверждения через СМС"
+        android:enabled="false" />
+
 </PreferenceScreen>

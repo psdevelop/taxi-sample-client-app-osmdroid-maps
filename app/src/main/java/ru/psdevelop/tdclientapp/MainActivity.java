@@ -1016,6 +1016,11 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
                                     if (useSMSInRegistration) {
+                                        if (isSMSRegsLimitOverload()) {
+                                            showMyMsg("Превышено количество попыток подтверждения!");
+                                            return;
+                                        }
+
                                         checkSMSRegistrationCode(phoneNumber);
                                         return;
                                     }
@@ -1038,6 +1043,21 @@ public class MainActivity extends AppCompatActivity {
             showMyMsg("Ошибка вывода диалога: " + e.getMessage());
         }
 
+    }
+
+    public boolean isSMSRegsLimitOverload() {
+        try {
+            int attemptsCount = prefs.getInt(
+                    "sms_regs_check_attempts_count", 0);
+            boolean limitOverload = attemptsCount >= 3;
+            if (!limitOverload) {
+                SharedPreferences.Editor edt = prefs.edit();
+                edt.putInt("sms_regs_check_attempts_count", attemptsCount + 1);
+                edt.commit();
+            }
+            return limitOverload;
+        } catch (Exception e) { }
+        return false;
     }
 
     public String getRegistrationCode() {
@@ -1144,6 +1164,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        phoneDlgIsOpened=false;
         try {
             Intent i = new Intent(getBaseContext(), TDClientService.class);
             startService(i);
@@ -1176,8 +1197,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+        //getMenuInflater().inflate(R.menu.menu_main, menu);
+        return false;
     }
 
     @Override
