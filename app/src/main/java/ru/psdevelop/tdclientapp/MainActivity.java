@@ -1066,8 +1066,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void checkSMSRegistrationCode(String phoneNumber) {
         final String regCode = getRegistrationCode();
-        String stringUrl = "https://smsc.ru/sys/send.php?login=Orange56" +
-                "&psw=Qweasdzxc123&phones=+7" + phoneNumber + "&mes=" +
+        String password = "";
+        String login = "";
+        String stringUrl = "https://smsc.ru/sys/send.php?login=" + login +
+                "&psw=" + password + "&phones=+7" + phoneNumber + "&mes=" +
                 "Kod: " + regCode;
 
         sendHttpRequest(stringUrl);
