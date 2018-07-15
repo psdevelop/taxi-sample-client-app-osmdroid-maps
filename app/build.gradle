@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "26.0.2"
+    compileSdkVersion 26
+    buildToolsVersion "27.0.3"
     defaultConfig {
         applicationId "ru.psdevelop.tdclientapp"
         minSdkVersion 15
-        targetSdkVersion 23
+        targetSdkVersion 26
         versionCode 20002
         versionName '2.0.2'
     }
@@ -23,9 +23,9 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.4.0'
-    compile 'com.android.support:design:23.4.0'
-    compile 'com.android.support:support-v4:23.4.0'
+    compile 'com.android.support:appcompat-v7:26.1.0'
+    compile 'com.android.support:design:26.1.0'
+    compile 'com.android.support:support-v4:26.1.0'
     compile 'org.osmdroid:osmdroid-android:5.6.5'
     compile('io.socket:socket.io-client:0.7.0') {
         exclude group: 'org.json', module: 'json'
