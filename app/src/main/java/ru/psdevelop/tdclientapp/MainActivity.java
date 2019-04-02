@@ -79,6 +79,9 @@ import java.util.Map;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.views.MapView;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+
 public class MainActivity extends AppCompatActivity {
 
     public static final String INFO_ACTION = "com.psdevelop.tdclientapp.MA_INFO_ACTION"; //recompile
@@ -600,7 +603,14 @@ public class MainActivity extends AppCompatActivity {
                 }   else if(msg.arg1 == ParamsAndConstants.MA_CANCELING)   {
                     sendOrderCancelRequest();
                 }   else if(msg.arg1 == ParamsAndConstants.SHOW_GM_ADDRESS)   {
-                    showGMAddress(msg.getData().getString("msg_text"));
+                    String gmAddress = msg.getData().getString("msg_text");
+                    showGMAddress(gmAddress);
+                    showMyMsg(gmAddress);
+                    if (msg.getData().containsKey("is_reverse_geocode") &&
+                            msg.getData().getBoolean("is_reverse_geocode") &&
+                            startMarker != null) {
+                        setStartMarker(gmAddress);
+                    }
                 }
                 else if(msg.arg1 == ParamsAndConstants.ID_ACTION_SET_HISTORY_ADR)   {
                     try {
@@ -801,6 +811,42 @@ public class MainActivity extends AppCompatActivity {
     Marker startMarker;
     Marker driverMarker;
 
+    public GeoPoint setStartMarker(String title) {
+        if(startMarker!=null) {
+            try {
+                startMarker.getInfoWindow().close();
+            } catch (Exception e) {
+
+            }
+            try {
+                map.getOverlays().remove(startMarker);
+            } catch (Exception e) {
+
+            }
+        }
+        startMarker = null;
+
+        GeoPoint startPoint = null;
+        if(lastLat>0 && lastLon>0) {
+            startPoint = new GeoPoint(lastLat, lastLon);
+
+            //0. Using the Marker overlay
+            startMarker = new Marker(map);
+            startMarker.setPosition(startPoint);
+            startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+            startMarker.setTitle(title.length() > 0 ? title : (hasMeGAdrDetecting ? lastAdr : "Вы здесь!"));
+            startMarker.setIcon(getResources().getDrawable(R.drawable.person).mutate());
+            //startMarker.setImage(getResources().getDrawable(R.drawable.ic_launcher));
+            startMarker.setInfoWindow(new MarkerInfoWindow(R.layout.bonuspack_bubble_black, map));
+            startMarker.setDraggable(true);
+            //startMarker.setOnMarkerDragListener(new OnMarkerDragListenerDrawer());
+            map.getOverlays().add(startMarker);
+            startMarker.showInfoWindow();
+        }
+
+        return startPoint;
+    }
+
     public void showMeOnMap()   {
         try {
 
@@ -825,19 +871,6 @@ public class MainActivity extends AppCompatActivity {
             if(!hasMeGAdrDetecting && lastLat>0 && lastLon>0)
                 sendGeocodeHTTPRequest( lastLat, lastLon);
 
-            if(startMarker!=null)
-                try {
-                    startMarker.getInfoWindow().close();
-                } catch(Exception e) {
-
-                }
-                try {
-                    map.getOverlays().remove(startMarker);
-                } catch(Exception e) {
-
-                }
-            startMarker = null;
-
             if(driverMarker!=null)
                 try {
                     driverMarker.getInfoWindow().close();
@@ -855,23 +888,7 @@ public class MainActivity extends AppCompatActivity {
             IMapController mapController = map.getController();
             mapController.setZoom(15);
 
-            GeoPoint startPoint=null;
-            if(lastLat>0 && lastLon>0) {
-                startPoint = new GeoPoint(lastLat, lastLon);
-
-                //0. Using the Marker overlay
-                startMarker = new Marker(map);
-                startMarker.setPosition(startPoint);
-                startMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-                startMarker.setTitle((hasMeGAdrDetecting ? lastAdr : "Вы здесь!"));
-                startMarker.setIcon(getResources().getDrawable(R.drawable.person).mutate());
-                //startMarker.setImage(getResources().getDrawable(R.drawable.ic_launcher));
-                startMarker.setInfoWindow(new MarkerInfoWindow(R.layout.bonuspack_bubble_black, map));
-                startMarker.setDraggable(true);
-                //startMarker.setOnMarkerDragListener(new OnMarkerDragListenerDrawer());
-                map.getOverlays().add(startMarker);
-                startMarker.showInfoWindow();
-            }
+            GeoPoint startPoint = setStartMarker("");
 
             if(drLat>0 && drLon>0)  {
                 GeoPoint driverPoint = new GeoPoint(drLat, drLon);
@@ -919,9 +936,8 @@ public class MainActivity extends AppCompatActivity {
             builder.setTitle("Поиск по адресу").setMessage("Искать в регионе '" + ParamsAndConstants.REGION_DEFAULT + "'")
                     .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
-                            // FIRE ZE MISSILES!
-                            //sendReverseGeocodeHTTPRequest(ParamsAndConstants.REGION_DEFAULT+" "+tgadr);
-                            lastAdr = ParamsAndConstants.REGION_DEFAULT + lastAdr;
+                            lastAdr = lastAdr + "," + ParamsAndConstants.REGION_DEFAULT +
+                                    ParamsAndConstants.PLACE_REPLACE3 + ParamsAndConstants.PLACE_REPLACE4;
                             startGPSCoordsProcessingInc(gadraa);
                         }
                     })
@@ -1226,229 +1242,102 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void sendReverseGeocodeHTTPRequest(String adress)	{
-        final String addres = "https://maps.googleapis.com/maps/api/geocode/xml?key="+ParamsAndConstants.gm_key+
-                "&address="+URLEncoder.encode(adress)+"&sensor=false&language=ru";
+        final String addres = "https://nominatim.openstreetmap.org/search/" + URLEncoder.encode(adress) +
+                "?format=json&addressdetails=1&limit=1&polygon_svg=1";
+        showMyMsg(addres);
         if(adress.length()>4)
-        new Thread(new Runnable() {
+            new Thread(new Runnable() {
 
-            public void parseAnswer(String xmlData) {
-                //setContentView(R.layout.main);
-                String tmp = "";
-                boolean hasGAdrLat=false, hasGAdrLon=false;
+                public void parseAnswer(String data) {
+                    try {
+                        JSONObject resultJson = (new JSONArray(data)).getJSONObject(0);
 
-                try {
-                    XmlPullParserFactory factory = XmlPullParserFactory
-                            .newInstance();
-                    factory.setNamespaceAware(true);
-                    XmlPullParser xpp = factory.newPullParser();
-
-                    xpp.setInput(new StringReader(xmlData));
-                    boolean isLocation = false;
-                    boolean isResult = false;
-                    boolean isGeometry = false;
-                    boolean isLng = false, isLat = false;
-                    boolean isStatus = false;
-                    boolean statusIsOK = false;
-
-
-
-                    while (xpp.getEventType() != XmlPullParser.END_DOCUMENT) {
-                        switch (xpp.getEventType()) {
-                            // начало документа
-                            case XmlPullParser.START_DOCUMENT:
-                                //Log.d(LOG_TAG, "START_DOCUMENT");
-                                break;
-                            // начало тэга
-                            case XmlPullParser.START_TAG:
-                                if(xpp.getName().equalsIgnoreCase("status"))  {
-                                    isStatus=true;
-                                }
-                                if(xpp.getName().equalsIgnoreCase("result"))  {
-                                    isResult=true;
-                                }
-                                if(xpp.getName().equalsIgnoreCase("geometry"))  {
-                                    isGeometry=true;
-                                }
-                                if(xpp.getName().equalsIgnoreCase("location"))  {
-                                    isLocation=true;
-                                }
-                                if(xpp.getName().equalsIgnoreCase("lng"))  {
-                                    isLng=true;
-                                }
-                                if(xpp.getName().equalsIgnoreCase("lat"))  {
-                                    isLat=true;
-                                }
-                                //Log.d(LOG_TAG, "START_TAG: name = " + xpp.getName()
-                                //        + ", depth = " + xpp.getDepth() + ", attrCount = "
-                                //        + xpp.getAttributeCount());
-                                tmp = "";
-                                for (int i = 0; i < xpp.getAttributeCount(); i++) {
-                                    tmp = tmp + xpp.getAttributeName(i) + " = "
-                                            + xpp.getAttributeValue(i) + ", ";
-                                }
-                                //if (!TextUtils.isEmpty(tmp))
-                                    //Log.d(LOG_TAG, "Attributes: " + tmp);
-                                break;
-                            // конец тэга
-                            case XmlPullParser.END_TAG:
-                                //Log.d(LOG_TAG, "END_TAG: name = " + xpp.getName());
-                                if(xpp.getName().equalsIgnoreCase("status"))  {
-                                    isStatus=false;
-                                }
-                                if(xpp.getName().equalsIgnoreCase("result"))  {
-                                    isResult=false;
-                                }
-                                if(xpp.getName().equalsIgnoreCase("geometry"))  {
-                                    isGeometry=false;
-                                }
-                                if(xpp.getName().equalsIgnoreCase("location"))  {
-                                    isLocation=false;
-                                }
-                                if(xpp.getName().equalsIgnoreCase("lng"))  {
-                                    isLng=false;
-                                }
-                                if(xpp.getName().equalsIgnoreCase("lat"))  {
-                                    isLat=false;
-                                }
-                                break;
-                            // содержимое тэга
-                            case XmlPullParser.TEXT:
-                                //Log.d(LOG_TAG, "text = " + xpp.getText());
-                                //if(isLocation)  {
-                                //    isLocation=false;
-                                //    showMsg("isLocation: "+xpp.getText());
-                                //}
-                                if(isStatus)    {
-                                    if(xpp.getText().equalsIgnoreCase("OK"))    {
-                                        statusIsOK=true;
-                                        lastRevLat=-1;
-                                        lastRevLon=-1;
-                                    }
-                                }
-                                if(isLng&&isGeometry&&isLocation&&isResult&&statusIsOK)  {
-                                    isLng=false;
-                                    lastRevLon = strToDoubleDef(xpp.getText(), -1);
-                                    hasGAdrLon=true;
-                                    //showMsg("isLng: "+lastRevLon);
-                                }
-                                if(isLat&&isGeometry&&isLocation&&isResult&&statusIsOK)  {
-                                    isLat=false;
-                                    lastRevLat = strToDoubleDef(xpp.getText(), -1);
-                                    hasGAdrLat=true;
-                                    //showMsg("isLat: "+lastRevLat);
-                                }
-                                break;
-
-                            default:
-                                break;
+                        if (resultJson.has("lat") && resultJson.has("lon") && activeCoordSearch) {
+                            lastLon = strToDoubleDef(resultJson.getString("lon"), -1);
+                            lastLat = strToDoubleDef(resultJson.getString("lat"), -1);
+                        } else {
+                            showMsg("Не найдена координата для введенного адреса 1!");
                         }
-                        // следующий элемент
-                        xpp.next();
-                    }
-                    //Log.d(LOG_TAG, "END_DOCUMENT");
 
-                } catch (XmlPullParserException e) {
-                    showMsg("XmlPullParserException "+e.getMessage());
-                    //e.printStackTrace();
-                } catch (IOException e) {
-                    showMsg("IOException "+e.getMessage());
-                    //e.printStackTrace();
+                        if (lastLat > 0 && lastLon > 0 && activeCoordSearch) {
+                            Intent bintent = new Intent(INFO_ACTION);
+                            bintent.putExtra(ParamsAndConstants.TYPE, ParamsAndConstants.ID_ACTION_SEND_CCOORDS);
+                            bintent.putExtra("clat", lastLat);
+                            bintent.putExtra("clon", lastLon);
+                            sendBroadcast(bintent);
+                            hasMeGAdrDetecting = true;
+                            activeCoordSearch = false;
+                            coordSearchDetectFromAdr = true;
+                            Message msg = new Message();
+                            msg.arg1 = ParamsAndConstants.SHOW_COORDS_INFO;
+                            Bundle bnd = new Bundle();
+                            bnd.putString("msg_text", "===");
+                            msg.setData(bnd);
+                            handle.sendMessage(msg);
+                        } else {
+                            showMsg("Не найдена координата для введенного адреса!");
+                        }
+
+                    } catch (Exception e) {
+                        showMsg("Ошибка парсинга ответа Nominatim Geocoder" + e.getMessage());
+                    }
+
                 }
 
-                if(hasGAdrLat&&hasGAdrLon&&lastRevLon>0&&lastRevLat>0&&activeCoordSearch) {
-                    lastLon=lastRevLon;
-                    lastLat=lastRevLat;
-                    Intent bintent = new Intent(INFO_ACTION);
-                    bintent.putExtra(ParamsAndConstants.TYPE, ParamsAndConstants.ID_ACTION_SEND_CCOORDS);
-                    bintent.putExtra("clat", lastLat);
-                    bintent.putExtra("clon", lastLon);
-                    sendBroadcast(bintent);
-                    hasMeGAdrDetecting=true;
-                    activeCoordSearch=false;
-                    coordSearchDetectFromAdr=true;
+                public void showMsg(String msgtext)    {
                     Message msg = new Message();
-                    msg.arg1 = ParamsAndConstants.SHOW_COORDS_INFO;
+                    msg.arg1 = ParamsAndConstants.SHOW_MESSAGE_TOAST;
                     Bundle bnd = new Bundle();
-                    bnd.putString("msg_text", "===");
+                    bnd.putString("msg_text", msgtext);
                     msg.setData(bnd);
                     handle.sendMessage(msg);
-                } else {
-                    showMsg("Не найдена координата для введенного адреса!");
                 }
 
-            }
-
-            public void showMsg(String msgtext)    {
-                Message msg = new Message();
-                msg.arg1 = ParamsAndConstants.SHOW_MESSAGE_TOAST;
-                Bundle bnd = new Bundle();
-                bnd.putString("msg_text", msgtext);
-                msg.setData(bnd);
-                handle.sendMessage(msg);
-            }
-
-            public void showGMAdress(String msgtext)    {
-                Message msg = new Message();
-                msg.arg1 = ParamsAndConstants.SHOW_GM_ADDRESS;
-                Bundle bnd = new Bundle();
-                bnd.putString("msg_text", msgtext);
-                msg.setData(bnd);
-                handle.sendMessage(msg);
-            }
-
-            @Override
-            public void run(){
-                try {
-                    String url = addres;
-
-                    URL obj = new URL(url);
-                    HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-
-                    // optional default is GET
-                    con.setRequestMethod("GET");
-
-                    //add request header
-                    con.setRequestProperty("User-Agent", "Mozilla/5.0");
-
-                    int responseCode = con.getResponseCode();
-                    System.out.println("\nSending 'GET' request to URL : " + url);
-                    System.out.println("Response Code : " + responseCode);
-
-                    BufferedReader in = new BufferedReader(
-                            new InputStreamReader(con.getInputStream()));
-                    String inputLine;
-                    StringBuffer response = new StringBuffer();
-
-                    while ((inputLine = in.readLine()) != null) {
-                        response.append(inputLine);
-                    }
-                    in.close();
-
-                    //showMsg(response.toString());
+                @Override
+                public void run(){
                     try {
+                        String url = addres;
 
-                        //showMsg("Коорд по адресу "+response.toString());
-                        parseAnswer(response.toString());
-                        //JSONObject resultJson = new JSONObject((new JSONObject
-                        //        (response.toString())).getString("result"));
-                                //(new JSONArray((new JSONObject
-                        //        (response.toString())).getString("results"))).getJSONObject(0);
-                        //{'status':'OK', 'result':{'type':'geo'}} <status>OK</status><result><type>geo</type></result>
-                        //showGMAdress(resultJson.getString("formatted_address").replace("Россия",""));
-                        //showMsg("Коорд по адресу "+resultJson.toString());
-                    } catch (Exception ex) {
-                        showMsg("Парсинг ответа обратного запроса Geocoder"+ex.getMessage());
+                        URL obj = new URL(url);
+                        HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
+
+                        // optional default is GET
+                        con.setRequestMethod("GET");
+
+                        //add request header
+                        con.setRequestProperty("User-Agent", "Dalvik");
+
+                        int responseCode = con.getResponseCode();
+                        System.out.println("\nSending 'GET' request to URL : " + url);
+                        System.out.println("Response Code : " + responseCode);
+
+                        BufferedReader in = new BufferedReader(
+                                new InputStreamReader(con.getInputStream()));
+                        String inputLine;
+                        StringBuffer response = new StringBuffer();
+
+                        while ((inputLine = in.readLine()) != null) {
+                            response.append(inputLine);
+                        }
+                        in.close();
+
+                        showMsg(response.toString());
+                        try {
+                            parseAnswer(response.toString());
+                        } catch (Exception ex) {
+                            showMsg("Парсинг ответа обратного запроса Nominatim! "+ex.getMessage());
+                        }
+                    }
+                    catch (Exception e) {
+                        showMsg("Парсинг обратного запроса геокодера Nominatim! "+e.getMessage());
                     }
                 }
-                catch (Exception e) {
-                    showMsg("Парсинг обратного запроса геокодера Google Maps! "+e.getMessage());
-                }
-            }
-        }).start();
+            }).start();
     }
 
     public void sendGeocodeHTTPRequest(double rlat, double rlon)	{
-        final String addres = "http://maps.googleapis.com/maps/api/geocode/json?latlng="+rlat+","+rlon+"&sensor=false&language=ru";
+        final String addres = "https://nominatim.openstreetmap.org/reverse?" +
+                "format=json&lat=" + rlat + "&lon=" + rlon + "&zoom=18&addressdetails=1";
         new Thread(new Runnable() {
 
             public void showMsg(String msgtext)    {
@@ -1465,6 +1354,7 @@ public class MainActivity extends AppCompatActivity {
                 msg.arg1 = ParamsAndConstants.SHOW_GM_ADDRESS;
                 Bundle bnd = new Bundle();
                 bnd.putString("msg_text", msgtext);
+                bnd.putBoolean("is_reverse_geocode", true);
                 msg.setData(bnd);
                 handle.sendMessage(msg);
             }
@@ -1475,13 +1365,18 @@ public class MainActivity extends AppCompatActivity {
                     String url = addres;
 
                     URL obj = new URL(url);
-                    HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+                    HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
 
                     // optional default is GET
                     con.setRequestMethod("GET");
 
                     //add request header
-                    con.setRequestProperty("User-Agent", "Mozilla/5.0");
+                    con.setRequestProperty("User-Agent", "Dalvik");
+
+                    /*SSLContext sslContext = SSLContext.getInstance("TLS");
+
+                    sslContext.init(null, null, null);
+                    con.setSSLSocketFactory(sslContext.getSocketFactory());*/
 
                     int responseCode = con.getResponseCode();
                     System.out.println("\nSending 'GET' request to URL : " + url);
@@ -1499,16 +1394,20 @@ public class MainActivity extends AppCompatActivity {
 
                     //showMsg(response.toString());
                     try {
-
-                        JSONObject resultJson = (new JSONArray((new JSONObject
-                                (response.toString())).getString("results"))).getJSONObject(0);
-                        showGMAdress(resultJson.getString("formatted_address").replace("Россия",""));
+                        //showMsg(response.toString());
+                        JSONObject addrJson = (new JSONObject
+                                (response.toString())).getJSONObject("address");
+                        //showMsg(addrJson.getString("road") + " " +
+                        //        addrJson.getString("house_number"));
+                        hasMeGAdrDetecting=true;
+                        showGMAdress(addrJson.getString("road") + " " +
+                                addrJson.getString("house_number"));
                     } catch (Exception e) {
-                            showMsg("Парсинг ответа Geocoder"+e.getMessage());
+                        showMsg("Ошибка парсинга ответа Nominatim Geocoder"+e.getMessage());
                     }
                 }
                 catch (Exception e) {
-                    showMsg("Запроса геокодера Google Maps! "+e.getMessage());
+                    showMsg("Запроса геокодера Nominatim! "+e.getMessage());
                 }
             }
         }).start();
