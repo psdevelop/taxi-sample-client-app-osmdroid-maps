@@ -351,7 +351,7 @@ public class TDClientService extends Service implements LocationListener {
     public void requestLUpd(boolean singleReq)	{
         try	{
             /*if (!mainActiv.USE_NETWORK_LOCATION||mainActiv.USE_BOTH_LOCATIONS)	{*/
-            //myManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 0, this);
+            myManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 0, this);
             myManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0, this);
         } catch(Exception le)	{
             showToast("Ошибка запуска слушателя TLM!"+le.getMessage());
@@ -635,6 +635,9 @@ public class TDClientService extends Service implements LocationListener {
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         reloadPrefs();
+        singleGPSDetect=true;
+        requestLUpd(true);
+        showToast("===");
         //showNotification("Упр. шлюз", "Запущена основная служба шлюза!");
         return super.onStartCommand(intent, flags, startId);
     }

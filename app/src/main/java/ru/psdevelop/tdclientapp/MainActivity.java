@@ -211,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
                             .show();*/
 					finish();
                     startActivity(getIntent());
-
+                    startGpsDetecting();
                 } else {
                     AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
@@ -1537,6 +1537,15 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    public static void startGpsDetecting() {
+        Message msg = new Message();
+        msg.arg1 = ParamsAndConstants.MA_GPS_DETECTING;
+        Bundle bnd = new Bundle();
+        bnd.putString("msg_text", "ddddd");
+        msg.setData(bnd);
+        handle.sendMessage(msg);
+    }
+
     public static class PlaceholderFragment extends Fragment {
         private static final String ARG_SECTION_NUMBER = "section_number";
         public View fragmentViev;
@@ -1715,12 +1724,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(View v) {
                         lastAdr = editTextFromAdres.getText().toString();
                         sendInfoBroadcast(ParamsAndConstants.ID_ACTION_WAKE_UP_NEO,"---");
-                        Message msg = new Message();
-                        msg.arg1 = ParamsAndConstants.MA_GPS_DETECTING;
-                        Bundle bnd = new Bundle();
-                        bnd.putString("msg_text", "ddddd");
-                        msg.setData(bnd);
-                        handle.sendMessage(msg);
+                        startGpsDetecting();
                     }
                 });
                 cancelButton.setOnClickListener(new View.OnClickListener() {
