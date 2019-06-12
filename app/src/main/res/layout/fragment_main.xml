@@ -94,18 +94,20 @@
         android:layout_alignEnd="@+id/editTextToAdr" />
 
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="СТАТУС: подключаюсь..., нажмите Определить местоположение или введите адрес"
         android:id="@+id/textViewStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="79dp"
         android:layout_below="@+id/orderButton"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:padding="5dp"
-        android:lines="7"
-        android:layout_alignRight="@+id/cancelButton"
         android:layout_alignEnd="@+id/cancelButton"
+        android:layout_alignRight="@+id/cancelButton"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginEnd="0dp"
+        android:layout_marginRight="0dp"
+        android:lines="7"
+        android:padding="5dp"
+        android:text="СТАТУС: подключаюсь..., нажмите Определить местоположение или введите адрес"
+        android:textAppearance="?android:attr/textAppearanceLarge"
         android:textSize="13dp" />
 
 
@@ -150,5 +152,13 @@
             android:background="@android:drawable/ic_delete"
              />
     </FrameLayout>
+
+    <TextView
+        android:id="@+id/sectDetectInfo"
+        android:layout_width="379dp"
+        android:layout_height="56dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="402dp"
+        android:text="TextView" />
 
 </RelativeLayout>

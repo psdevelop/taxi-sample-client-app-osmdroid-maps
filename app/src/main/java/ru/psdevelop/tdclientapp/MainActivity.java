@@ -117,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
     static MapView map;
     static TextView textViewStatus=null;
     static TextView mapStatusView = null, driverInfoMapView = null;
+    static TextView sectDetectInfo = null;
     static String ordersInfo="";
 
     public void requestPermissions(String[] PERMISSIONS) {
@@ -379,6 +380,27 @@ public class MainActivity extends AppCompatActivity {
                         setTextViewStatus(status, status, "");
                     }   catch(Exception e)  {
                         showMyMsg("SHOW_STATUS_STRING!"+e.getMessage());
+                    }
+                }
+                else if (msg.arg1 == ParamsAndConstants.SHOW_SECTOR_DETECT_INFO) {
+                    /**
+                     * detectData = {
+                     *       'sectorId': sectorId,
+                     *       'sectorName': sectorName,
+                     *       'districtId': districtId,
+                     *       'districtName': districtName,
+                     *       'companyId': companyId,
+                     *       'companyName': companyName
+                     *     };
+                     */
+                    try {
+                        JSONObject resultJson = new JSONObject(msg.getData().
+                                getString("msg_text"));
+                        setSectDetectInfo("Фирма: " + resultJson.getString("companyName") +
+                                "Район: " + resultJson.getString("districtName") +
+                                "Сектор: " + resultJson.getString("sectorName"));
+                    }   catch(Exception e)  {
+                        showMyMsg("Неудачное чтение данных определения сектора!"+e.getMessage());
                     }
                 }
                 else if (msg.arg1 == ParamsAndConstants.SHOW_STATUS_INFO) {
@@ -665,11 +687,23 @@ public class MainActivity extends AppCompatActivity {
                             Bundle bnd = new Bundle();
                             bnd.putString("msg_text", intent.getStringExtra(ParamsAndConstants.MSG_TEXT));
                             msg.setData(bnd);
-                            //showMyMsg("SHOW_STATUS_INFO"+intent.getStringExtra(ParamsAndConstants.MSG_TEXT));
                             handle.sendMessage(msg);
 
                         } catch (Exception ex) {
                             showMyMsg("Ошибка ID_ACTION_SHOW_STATUS_INFO: " + ex);
+                        }
+                        break;
+                    case ParamsAndConstants.ID_ACTION_SHOW_SECTOR_DETECT_INFO:
+                        try {
+                            Message msg = new Message();
+                            msg.arg1 = ParamsAndConstants.SHOW_SECTOR_DETECT_INFO;
+                            Bundle bnd = new Bundle();
+                            bnd.putString("msg_text", intent.getStringExtra(ParamsAndConstants.MSG_TEXT));
+                            msg.setData(bnd);
+                            handle.sendMessage(msg);
+
+                        } catch (Exception ex) {
+                            showMyMsg("Ошибка ID_ACTION_SHOW_SECTOR_DETECT_INFO: " + ex);
                         }
                         break;
                     case ParamsAndConstants.ID_ACTION_SHOW_STATUS_STRING:
@@ -780,6 +814,14 @@ public class MainActivity extends AppCompatActivity {
             driverInfoMapView.setText(driverInfo);
         }   catch(Exception e)  {
             showMyMsg("setMapsViewStatus error: "+e.getMessage());
+        }
+    }
+
+    public void setSectDetectInfo(String txt)   {
+        try {
+            sectDetectInfo.setText(txt);
+        }   catch(Exception e)  {
+            showMyMsg("setSectDetectInfo: "+e.getMessage());
         }
     }
 
@@ -1652,6 +1694,7 @@ public class MainActivity extends AppCompatActivity {
             if(getArguments().getInt(ARG_SECTION_NUMBER)==1)    {
                 rootView = inflater.inflate(R.layout.fragment_main, container, false);
                 textViewStatus = (TextView) rootView.findViewById(R.id.textViewStatus);
+                sectDetectInfo = (TextView) rootView.findViewById(R.id.sectDetectInfo);
                 orderButton = (Button)rootView.findViewById(R.id.orderButton);
                 gpsDetectButton = (Button)rootView.findViewById(R.id.gpsDetectButton);
                 cancelButton = (Button)rootView.findViewById(R.id.cancelButton);

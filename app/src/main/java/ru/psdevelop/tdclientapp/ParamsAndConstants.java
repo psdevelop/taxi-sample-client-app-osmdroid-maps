@@ -83,6 +83,7 @@ public abstract class ParamsAndConstants {
     public final static int MA_SEND_INFO_BCAST = 20;
     public final static int MA_SET_STAT_TEXTVIEW = 23;
     public final static int SHOW_STATUS_STRING = 25;
+    public final static int SHOW_SECTOR_DETECT_INFO = 32;
 
     public static final String TYPE = "type";
     public static final String MSG_TEXT = "msg_text";
@@ -97,6 +98,7 @@ public abstract class ParamsAndConstants {
     public static final int ID_ACTION_SHOW_STATUS_STRING = 24;
     public static final int ID_ACTION_SET_HISTORY_ADR = 26;
     public static final int ID_ACTION_SEND_CCOORDS = 27;
+    public static final int ID_ACTION_SHOW_SECTOR_DETECT_INFO = 31;
 
     public final static int CHECK_CONNECT = 5;
     public final static int RECEIVE_AUTH = 2;
@@ -106,4 +108,5 @@ public abstract class ParamsAndConstants {
     public final static int REQ_DECLINE = 16;
     public final static int SERVER_OVERLOAD = 17;
     public final static int DISCONNECT_SOCKIO = 21;
+    public final static int RECEIVE_SECTOR_DETECT = 30;
 }
