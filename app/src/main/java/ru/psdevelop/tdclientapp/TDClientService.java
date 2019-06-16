@@ -325,6 +325,22 @@ public class TDClientService extends Service implements LocationListener {
                         }
                         //showToast(intent.getStringExtra(RouteService.MSG_TEXT));
                         break;
+                    case ParamsAndConstants.ID_ACTION_GET_TARIF_AND_OPTIONS:
+                        try {
+                            if (auth) {
+                                showToast("Отсылаю запрос отмены...");
+                                //clId = clientId;//strToIntDef(prefs.getString("example_list", "-1"), -1);
+                                phone = prefs.getString("example_text", "-1");
+                                JSONObject resultJson = new JSONObject();
+                                resultJson.put("id", clientId);
+                                resultJson.put("phone", phone);
+                                mSocket.emit("tarifs_and_options", resultJson.toString());
+                            }
+                        } catch (Exception ex) {
+                            showToast("Ошибка отправки запроса тарифов и опций: " + ex.getMessage());
+                        }
+                        //showToast(intent.getStringExtra(RouteService.MSG_TEXT));
+                        break;
                     case ParamsAndConstants.ID_ACTION_START_GPS_DETECTING:
                         singleGPSDetect=true;
                         requestLUpd(true);

@@ -101,6 +101,7 @@ public abstract class ParamsAndConstants {
     public static final int ID_ACTION_SEND_CCOORDS = 27;
     public static final int ID_ACTION_SHOW_SECTOR_DETECT_INFO = 31;
     public static final int ID_ACTION_SHOW_TARIF_OPTIONS = 34;
+    public static final int ID_ACTION_GET_TARIF_AND_OPTIONS = 36;
 
     public final static int CHECK_CONNECT = 5;
     public final static int RECEIVE_AUTH = 2;

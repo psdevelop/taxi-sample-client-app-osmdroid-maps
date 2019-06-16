@@ -124,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
     static String ordersInfo="";
     static RadioGroup tarifPlanChoice = null;
     static Context firstFragmentContext = null;
+    static String tariffPlanName = "";
 
     public void requestPermissions(String[] PERMISSIONS) {
         ActivityCompat.requestPermissions(this, PERMISSIONS,
@@ -451,12 +452,24 @@ public class MainActivity extends AppCompatActivity {
                         JSONObject resultJson = new JSONObject(msg.getData().
                             getString("msg_text"));
                         int tplansCnt = resultJson.getInt("tpl_cnt");
+                        tariffPlanName = "";
                         //showMyMsg("cnt=" + tplansCnt);
                         for (int i = 0; i < tplansCnt; i++) {
                             RadioButton newRadioButton = new RadioButton(firstFragmentContext);
                             newRadioButton.setText(resultJson.getString("tpn" + i));
                             tarifPlanChoice.addView(newRadioButton);
                         }
+
+                        tarifPlanChoice.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener()
+                        {
+                            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                                // checkedId is the RadioButton selected
+                                RadioButton rb = (RadioButton)findViewById(checkedId);
+                                //textViewChoice.setText("You Selected " + rb.getText());
+                                tariffPlanName = rb.getText().toString();
+                                Toast.makeText(getApplicationContext(), rb.getText(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     }   catch(Exception e)  {
                         showMyMsg("Неудачное чтение данных тарифов и опций!"+e.getMessage());
                     }
@@ -1772,10 +1785,8 @@ public class MainActivity extends AppCompatActivity {
                 textViewStatus = (TextView) rootView.findViewById(R.id.textViewStatus);
                 sectDetectInfo = (TextView) rootView.findViewById(R.id.sectDetectInfo);
                 tarifPlanChoice = (RadioGroup) rootView.findViewById(R.id.tarifPlanChoice);
-                //RadioButton newRadioButton = new RadioButton(getContext());
-                //newRadioButton.setText("Рыжий");
-                //tarifPlanChoice.addView(newRadioButton);
                 firstFragmentContext = getContext();
+                sendInfoBroadcast(ParamsAndConstants.ID_ACTION_GET_TARIF_AND_OPTIONS, "---");
                 orderButton = (Button)rootView.findViewById(R.id.orderButton);
                 gpsDetectButton = (Button)rootView.findViewById(R.id.gpsDetectButton);
                 cancelButton = (Button)rootView.findViewById(R.id.cancelButton);
