@@ -328,7 +328,7 @@ public class TDClientService extends Service implements LocationListener {
                     case ParamsAndConstants.ID_ACTION_GET_TARIF_AND_OPTIONS:
                         try {
                             if (auth) {
-                                showToast("Отсылаю запрос отмены...");
+                                //showToast("Отсылаю запрос отмены...");
                                 //clId = clientId;//strToIntDef(prefs.getString("example_list", "-1"), -1);
                                 phone = prefs.getString("example_text", "-1");
                                 JSONObject resultJson = new JSONObject();
