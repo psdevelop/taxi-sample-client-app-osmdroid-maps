@@ -58,6 +58,7 @@ public class TDClientService extends Service implements LocationListener {
     static boolean inactiveTimeoutBlock=false;
     static int inactiveTimeout=0;
     boolean singleGPSDetect=false;
+    String tarifAndOptionsData = null;
 
     public static final String INFO_ACTION = "com.psdevelop.tdclientapp.INFO_ACTION";
 
@@ -253,6 +254,13 @@ public class TDClientService extends Service implements LocationListener {
                     //showToast(msg.getData().
                     //        getString("data"));
                     sendInfoBroadcast( ParamsAndConstants.ID_ACTION_SHOW_SECTOR_DETECT_INFO, msg.getData().
+                            getString("data"));
+                } else if (msg.arg1 == ParamsAndConstants.RECEIVE_TARIFS_OPTIONS) {
+                    //showToast(msg.getData().
+                    //        getString("data"));
+                    tarifAndOptionsData = msg.getData().
+                            getString("data");
+                    sendInfoBroadcast( ParamsAndConstants.ID_ACTION_SHOW_TARIF_OPTIONS, msg.getData().
                             getString("data"));
                 } else if (msg.arg1 == ParamsAndConstants.REQUEST_CLSTAT) {
 
@@ -465,6 +473,7 @@ public class TDClientService extends Service implements LocationListener {
                             mSocket.on("clstat", onClStat);
                             mSocket.on("req_decline", onReqDecline);
                             mSocket.on("sector_detecting", onSectorDetect);
+                            mSocket.on("tarifs_and_options", onTarifOptionsGet);
                         }
                     }
                     if (mSocket != null) {// ? mSocket.connected() : false) {
@@ -593,6 +602,25 @@ public class TDClientService extends Service implements LocationListener {
         }
     };
 
+    private Emitter.Listener onTarifOptionsGet = new Emitter.Listener() {
+        public void handleJSONStr(String data) {
+            //this.showMyMsg("sock show timer");
+            Message msg = new Message();
+            //msg.obj = this.mainActiv;
+            msg.arg1 = ParamsAndConstants.RECEIVE_TARIFS_OPTIONS;
+            Bundle bnd = new Bundle();
+            bnd.putString("data", data);
+            msg.setData(bnd);
+            handle.sendMessage(msg);
+        }
+
+        @Override
+        public void call(Object... args) {
+            JSONObject data = (JSONObject) args[0];
+            handleJSONStr(data.toString());
+        }
+    };
+
     private Emitter.Listener onReqDecline = new Emitter.Listener() {
         public void handleJSONStr(String data) {
             //this.showMyMsg("sock show timer");
@@ -658,7 +686,6 @@ public class TDClientService extends Service implements LocationListener {
     }
 
     public int onStartCommand(Intent intent, int flags, int startId) {
-
         reloadPrefs();
         singleGPSDetect=true;
         requestLUpd(true);

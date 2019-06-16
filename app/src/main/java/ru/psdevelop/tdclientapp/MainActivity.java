@@ -45,6 +45,8 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -89,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
     static SharedPreferences prefs=null;
     boolean phoneDlgIsOpened=false;
     static boolean activeCoordSearch=false;
+    static boolean backgroundCoordSearchCompleted = false;
     boolean coordSerchIsComplete=false;
     static double lastLat=ParamsAndConstants.defLat, lastLon=ParamsAndConstants.defLon, drLat=0.0, drLon=0.0,
         lastRevLat=-1, lastRevLon=-1;
@@ -119,6 +122,8 @@ public class MainActivity extends AppCompatActivity {
     static TextView mapStatusView = null, driverInfoMapView = null;
     static TextView sectDetectInfo = null;
     static String ordersInfo="";
+    static RadioGroup tarifPlanChoice = null;
+    static Context firstFragmentContext = null;
 
     public void requestPermissions(String[] PERMISSIONS) {
         ActivityCompat.requestPermissions(this, PERMISSIONS,
@@ -212,7 +217,8 @@ public class MainActivity extends AppCompatActivity {
                             .show();*/
 					finish();
                     startActivity(getIntent());
-                    startGpsDetecting();
+                    sendInfoBroadcast(ParamsAndConstants.ID_ACTION_START_GPS_DETECTING, "---");
+                    backgroundCoordSearchCompleted = false;
                 } else {
                     AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
@@ -401,6 +407,58 @@ public class MainActivity extends AppCompatActivity {
                                 "Сектор: " + resultJson.getString("sectorName"));
                     }   catch(Exception e)  {
                         showMyMsg("Неудачное чтение данных определения сектора!"+e.getMessage());
+                    }
+                }
+                else if (msg.arg1 == ParamsAndConstants.SHOW_TARIF_AND_OPTIONS) {
+                    /**
+                     * {"command":"to_lst","t_cnt":"10","tid0":"1","tn0":"ГОРОД-Ст","tmt0":"10.00","txt0":"20.00",
+                     * "ttpi0":"2","tdip0":"0","tstds0":"0","tdpt0":"0.00","tspt0":"0.00","tshn0":"Гст","otarid0":"3",
+                     * "otplid0":"2","trarcnt0":"4","tralat0_0":"44.87430","tralon0_0":"37.29760","tralat0_1":
+                     * "44.90140","tralon0_1":"37.28180","tralat0_2":"44.90750","tralon0_2":"37.35290","tralat0_3":"44.87700",
+                     * "tralon0_3":"37.33400","tid1":"2","tn1":"ПРИГОРОД-Ст","tmt1":"12.00","txt1":"22.00","ttpi1":"2",
+                     * "tdip1":"0","tstds1":"0","tdpt1":"0.00","tspt1":"0.00","tshn1":"Пгст","otarid1":"3","otplid1":"2","
+                     * trarcnt1":"0","tid2":"3","tn2":"МЕЖГОРОД-Ст","tmt2":"17.00","txt2":"27.00","ttpi2":"2","tdip2":"0",
+                     * "tstds2":"0","tdpt2":"0.00","tspt2":"0.00","tshn2":"Мгст","otarid2":"-1","otplid2":"-1","trarcnt2":"0",
+                     * "tid3":"4","tn3":"ГОРОД-Пр","tmt3":"10.00","txt3":"20.00","ttpi3":"3","tdip3":"0","tstds3":"0","tdpt3":
+                     * "0.00","tspt3":"0.00","tshn3":"Гпр","otarid3":"-1","otplid3":"-1","trarcnt3":"0","tid4":"5","tn4":"
+                     * ПРИГОРОД-Пр","tmt4":"10.00","txt4":"20.00","ttpi4":"3","tdip4":"0","tstds4":"0","tdpt4":"0.00",
+                     * "tspt4":"0.00","tshn4":"Пгпр","otarid4":"-1","otplid4":"-1","trarcnt4":"0","tid5":"6","tn5":"МЕЖГОРОД-Пр",
+                     * "tmt5":"10.00","txt5":"20.00","ttpi5":"3","tdip5":"0","tstds5":"0","tdpt5":"0.00","tspt5":"0.00","
+                     * tshn5":"Мгпр","otarid5":"-1","otplid5":"-1","trarcnt5":"0","tid6":"7","tn6":"ГОРОД-Эк","tmt6":"10.00",
+                     * "txt6":"20.00","ttpi6":"1","tdip6":"0","tstds6":"0","tdpt6":"0.00","tspt6":"0.00","tshn6":"Гэк","
+                     * otarid6":"-1","otplid6":"-1","trarcnt6":"0","tid7":"8","tn7":"ПРИГОРОД-Эк","tmt7":"10.00","txt7":"20.00",
+                     * "ttpi7":"1","tdip7":"0","tstds7":"0","tdpt7":"0.00","tspt7":"0.00","tshn7":"Пгэк","otarid7":"-1",
+                     * "otplid7":"-1","trarcnt7":"0","tid8":"9","tn8":"МЕЖГОРОД-Эк","tmt8":"10.00","txt8":"20.00",
+                     * "ttpi8":"1","tdip8":"0","tstds8":"0","tdpt8":"0.00","tspt8":"0.00","tshn8":"Мгэк","otarid8":"-1",
+                     * "otplid8":"-1","trarcnt8":"0","tid9":"12","tn9":"село1","tmt9":"11.00","txt9":"18.00","ttpi9":"2","
+                     * tdip9":"0","tstds9":"0","tdpt9":"0.00","tspt9":"0.00","tshn9":"сл1","otarid9":"3","otplid9":"2",
+                     * "trarcnt9":"0","op_cnt":"13","oid0":"1","on0":"ПЕРЕГРУЗ-Ст","oscf0":"1.50","oscm0":"0.00","otpi0":"2",
+                     * "oshn0":"Пст","oid1":"2","on1":"БАГАЖ-Ст","oscf1":"1.00","oscm1":"50.00","otpi1":"2","oshn1":"Бст",
+                     * "oid2":"3","on2":"ДОСТАВКА-Ст","oscf2":"1.00","oscm2":"300.00","otpi2":"2","oshn2":"Дст","oid3":"4","
+                     * on3":"ЖИВОТНЫЕ-Ст","oscf3":"1.00","oscm3":"0.00","otpi3":"2","oshn3":"Жст","oid4":"5","on4":
+                     * "ПЕРЕГРУЗ-Пр","oscf4":"1.00","oscm4":"0.00","otpi4":"3","oshn4":"ППр","oid5":"6","on5":"БАГАЖ-Пр","
+                     * oscf5":"1.00","oscm5":"0.00","otpi5":"3","oshn5":"БПр","oid6":"7","on6":"ДОСТАВКА-Пр","oscf6":"1.00","
+                     * oscm6":"0.00","otpi6":"3","oshn6":"ДПр","oid7":"8","on7":"ЖИВОТНЫЕ-Пр","oscf7":"1.00","oscm7":"0.00",
+                     * "otpi7":"3","oshn7":"ЖПр","oid8":"9","on8":"ПЕРЕГРУЗ-эк","oscf8":"1.00","oscm8":"0.00","otpi8":"1",
+                     * "oshn8":"Пэк","oid9":"10","on9":"БАГАЖ-эк","oscf9":"1.00","oscm9":"0.00","otpi9":"1","oshn9":"Бэк","
+                     * oid10":"11","on10":"ДОСТАВКА-эк","oscf10":"1.00","oscm10":"0.00","otpi10":"1","oshn10":"Дэк","oid11":"12","
+                     * on11":"ЖИВОТНЫЕ-эк","oscf11":"1.00","oscm11":"0.00","otpi11":"1","oshn11":"Жэк","oid12":"13","on12":
+                     * "ТОЧКА-Ст","oscf12":"1.00","oscm12":"50.00","otpi12":"2","oshn12":"Тст",
+                     * "tpl_cnt":"3","tpid0":"1","tpn0":"ЭКОНОМ","tpshn0":"эк","tpid1":"2","tpn1":"СТАНДАРТ","tpshn1":"ст",
+                     * "tpid2":"3","tpn2":"ПРЕМИУМ","tpshn2":"пр","msg_end":"ok"}
+                     */
+                    try {
+                        JSONObject resultJson = new JSONObject(msg.getData().
+                            getString("msg_text"));
+                        int tplansCnt = resultJson.getInt("tpl_cnt");
+                        //showMyMsg("cnt=" + tplansCnt);
+                        for (int i = 0; i < tplansCnt; i++) {
+                            RadioButton newRadioButton = new RadioButton(firstFragmentContext);
+                            newRadioButton.setText(resultJson.getString("tpn" + i));
+                            tarifPlanChoice.addView(newRadioButton);
+                        }
+                    }   catch(Exception e)  {
+                        showMyMsg("Неудачное чтение данных тарифов и опций!"+e.getMessage());
                     }
                 }
                 else if (msg.arg1 == ParamsAndConstants.SHOW_STATUS_INFO) {
@@ -706,6 +764,19 @@ public class MainActivity extends AppCompatActivity {
                             showMyMsg("Ошибка ID_ACTION_SHOW_SECTOR_DETECT_INFO: " + ex);
                         }
                         break;
+                    case ParamsAndConstants.ID_ACTION_SHOW_TARIF_OPTIONS:
+                        try {
+                            Message msg = new Message();
+                            msg.arg1 = ParamsAndConstants.SHOW_TARIF_AND_OPTIONS;
+                            Bundle bnd = new Bundle();
+                            bnd.putString("msg_text", intent.getStringExtra(ParamsAndConstants.MSG_TEXT));
+                            msg.setData(bnd);
+                            handle.sendMessage(msg);
+
+                        } catch (Exception ex) {
+                            showMyMsg("Ошибка ID_ACTION_SHOW_SECTOR_DETECT_INFO: " + ex);
+                        }
+                        break;
                     case ParamsAndConstants.ID_ACTION_SHOW_STATUS_STRING:
                         try {
                             Message msg = new Message();
@@ -721,7 +792,11 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case ParamsAndConstants.ID_ACTION_SHOW_COORD_INFO:
                         try {
-                            if (activeCoordSearch) {
+                            if (activeCoordSearch || !backgroundCoordSearchCompleted) {
+
+                                if (!activeCoordSearch) {
+                                    backgroundCoordSearchCompleted = true;
+                                }
                                 Message msg = new Message();
                                 msg.arg1 = ParamsAndConstants.SHOW_COORDS_INFO;
                                 Bundle bnd = new Bundle();
@@ -1248,6 +1323,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        sendInfoBroadcast(ParamsAndConstants.ID_ACTION_START_GPS_DETECTING, "---");
         //this.checkGPSPermission();
     }
 
@@ -1626,7 +1702,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void sendCancelRequest(FragmentActivity FActivity) {
-            if(lastOrdersCount>0) {
+            if (lastOrdersCount > 0) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(FActivity);
 
                 builder.setTitle("ПОДТВЕРЖДЕНИЕ")
@@ -1695,6 +1771,11 @@ public class MainActivity extends AppCompatActivity {
                 rootView = inflater.inflate(R.layout.fragment_main, container, false);
                 textViewStatus = (TextView) rootView.findViewById(R.id.textViewStatus);
                 sectDetectInfo = (TextView) rootView.findViewById(R.id.sectDetectInfo);
+                tarifPlanChoice = (RadioGroup) rootView.findViewById(R.id.tarifPlanChoice);
+                //RadioButton newRadioButton = new RadioButton(getContext());
+                //newRadioButton.setText("Рыжий");
+                //tarifPlanChoice.addView(newRadioButton);
+                firstFragmentContext = getContext();
                 orderButton = (Button)rootView.findViewById(R.id.orderButton);
                 gpsDetectButton = (Button)rootView.findViewById(R.id.gpsDetectButton);
                 cancelButton = (Button)rootView.findViewById(R.id.cancelButton);
