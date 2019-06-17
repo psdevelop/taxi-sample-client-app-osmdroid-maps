@@ -504,9 +504,9 @@ public class TDClientService extends Service implements LocationListener {
                             mSocket.emit("ident", resultJson.toString());
                         }
                         else {
-                            if (lastStatusData.length() > 0 &&
-                                    !prevLastStatusData.equals(lastStatusData))
-                                parseStatus(lastStatusData);
+                            //if (lastStatusData.length() > 0 &&
+                            //        !prevLastStatusData.equals(lastStatusData))
+                            //    parseStatus(lastStatusData);
                         }
                     } else {
                         lastStatusData="";

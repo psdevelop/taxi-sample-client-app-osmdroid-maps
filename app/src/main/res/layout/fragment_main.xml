@@ -163,10 +163,10 @@
 
     <TextView
         android:id="@+id/sectDetectInfo"
-        android:layout_width="382dp"
-        android:layout_height="30dp"
+        android:layout_width="380dp"
+        android:layout_height="27dp"
         android:layout_alignParentTop="true"
-        android:layout_marginTop="134dp"
+        android:layout_marginTop="140dp"
         android:text="Автоопределение района..."
         android:textSize="12sp" />
 

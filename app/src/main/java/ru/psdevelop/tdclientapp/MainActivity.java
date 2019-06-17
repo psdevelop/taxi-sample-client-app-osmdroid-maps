@@ -1841,7 +1841,9 @@ public class MainActivity extends AppCompatActivity {
                                     Message msg = new Message();
                                     msg.arg1 = ParamsAndConstants.MA_ORDERING;
                                     Bundle bnd = new Bundle();
-                                    bnd.putString("msg_text", editTextFromAdres.getText().toString());
+                                    //tarifPlanChoice.getCheckedRadioButtonId()
+                                    String tplanName = tariffPlanName.length() > 0 ? "(" + tariffPlanName + ")" : "";
+                                    bnd.putString("msg_text", editTextFromAdres.getText().toString() + tplanName);
                                     bnd.putString("end_adr", editTextToAdres.getText().toString());
                                     msg.setData(bnd);
                                     handle.sendMessage(msg);
