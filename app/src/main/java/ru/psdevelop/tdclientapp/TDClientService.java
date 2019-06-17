@@ -58,6 +58,7 @@ public class TDClientService extends Service implements LocationListener {
     static boolean inactiveTimeoutBlock=false;
     static int inactiveTimeout=0;
     boolean singleGPSDetect=false;
+    String tarifAndOptionsData = null;
 
     public static final String INFO_ACTION = "com.psdevelop.tdclientapp.INFO_ACTION";
 
@@ -249,6 +250,18 @@ public class TDClientService extends Service implements LocationListener {
                     //        getString("data"));
                     parseStatus(msg.getData().
                             getString("data"));
+                } else if (msg.arg1 == ParamsAndConstants.RECEIVE_SECTOR_DETECT) {
+                    //showToast(msg.getData().
+                    //        getString("data"));
+                    sendInfoBroadcast( ParamsAndConstants.ID_ACTION_SHOW_SECTOR_DETECT_INFO, msg.getData().
+                            getString("data"));
+                } else if (msg.arg1 == ParamsAndConstants.RECEIVE_TARIFS_OPTIONS) {
+                    //showToast(msg.getData().
+                    //        getString("data"));
+                    tarifAndOptionsData = msg.getData().
+                            getString("data");
+                    sendInfoBroadcast( ParamsAndConstants.ID_ACTION_SHOW_TARIF_OPTIONS, msg.getData().
+                            getString("data"));
                 } else if (msg.arg1 == ParamsAndConstants.REQUEST_CLSTAT) {
 
                 }
@@ -312,6 +325,22 @@ public class TDClientService extends Service implements LocationListener {
                         }
                         //showToast(intent.getStringExtra(RouteService.MSG_TEXT));
                         break;
+                    case ParamsAndConstants.ID_ACTION_GET_TARIF_AND_OPTIONS:
+                        try {
+                            if (auth) {
+                                //showToast("Отсылаю запрос отмены...");
+                                //clId = clientId;//strToIntDef(prefs.getString("example_list", "-1"), -1);
+                                phone = prefs.getString("example_text", "-1");
+                                JSONObject resultJson = new JSONObject();
+                                resultJson.put("id", clientId);
+                                resultJson.put("phone", phone);
+                                mSocket.emit("tarifs_and_options", resultJson.toString());
+                            }
+                        } catch (Exception ex) {
+                            showToast("Ошибка отправки запроса тарифов и опций: " + ex.getMessage());
+                        }
+                        //showToast(intent.getStringExtra(RouteService.MSG_TEXT));
+                        break;
                     case ParamsAndConstants.ID_ACTION_START_GPS_DETECTING:
                         singleGPSDetect=true;
                         requestLUpd(true);
@@ -351,7 +380,7 @@ public class TDClientService extends Service implements LocationListener {
     public void requestLUpd(boolean singleReq)	{
         try	{
             /*if (!mainActiv.USE_NETWORK_LOCATION||mainActiv.USE_BOTH_LOCATIONS)	{*/
-            //myManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 0, this);
+            myManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 0, this);
             myManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0, this);
         } catch(Exception le)	{
             showToast("Ошибка запуска слушателя TLM!"+le.getMessage());
@@ -459,6 +488,8 @@ public class TDClientService extends Service implements LocationListener {
                             mSocket.on("auth", onAuth);
                             mSocket.on("clstat", onClStat);
                             mSocket.on("req_decline", onReqDecline);
+                            mSocket.on("sector_detecting", onSectorDetect);
+                            mSocket.on("tarifs_and_options", onTarifOptionsGet);
                         }
                     }
                     if (mSocket != null) {// ? mSocket.connected() : false) {
@@ -473,9 +504,9 @@ public class TDClientService extends Service implements LocationListener {
                             mSocket.emit("ident", resultJson.toString());
                         }
                         else {
-                            if (lastStatusData.length() > 0 &&
-                                    !prevLastStatusData.equals(lastStatusData))
-                                parseStatus(lastStatusData);
+                            //if (lastStatusData.length() > 0 &&
+                            //        !prevLastStatusData.equals(lastStatusData))
+                            //    parseStatus(lastStatusData);
                         }
                     } else {
                         lastStatusData="";
@@ -568,6 +599,44 @@ public class TDClientService extends Service implements LocationListener {
         }
     };
 
+    private Emitter.Listener onSectorDetect = new Emitter.Listener() {
+        public void handleJSONStr(String data) {
+            //this.showMyMsg("sock show timer");
+            Message msg = new Message();
+            //msg.obj = this.mainActiv;
+            msg.arg1 = ParamsAndConstants.RECEIVE_SECTOR_DETECT;
+            Bundle bnd = new Bundle();
+            bnd.putString("data", data);
+            msg.setData(bnd);
+            handle.sendMessage(msg);
+        }
+
+        @Override
+        public void call(Object... args) {
+            JSONObject data = (JSONObject) args[0];
+            handleJSONStr(data.toString());
+        }
+    };
+
+    private Emitter.Listener onTarifOptionsGet = new Emitter.Listener() {
+        public void handleJSONStr(String data) {
+            //this.showMyMsg("sock show timer");
+            Message msg = new Message();
+            //msg.obj = this.mainActiv;
+            msg.arg1 = ParamsAndConstants.RECEIVE_TARIFS_OPTIONS;
+            Bundle bnd = new Bundle();
+            bnd.putString("data", data);
+            msg.setData(bnd);
+            handle.sendMessage(msg);
+        }
+
+        @Override
+        public void call(Object... args) {
+            JSONObject data = (JSONObject) args[0];
+            handleJSONStr(data.toString());
+        }
+    };
+
     private Emitter.Listener onReqDecline = new Emitter.Listener() {
         public void handleJSONStr(String data) {
             //this.showMyMsg("sock show timer");
@@ -633,8 +702,9 @@ public class TDClientService extends Service implements LocationListener {
     }
 
     public int onStartCommand(Intent intent, int flags, int startId) {
-
         reloadPrefs();
+        singleGPSDetect=true;
+        requestLUpd(true);
         //showNotification("Упр. шлюз", "Запущена основная служба шлюза!");
         return super.onStartCommand(intent, flags, startId);
     }
