@@ -125,6 +125,8 @@ public class MainActivity extends AppCompatActivity {
     static RadioGroup tarifPlanChoice = null;
     static Context firstFragmentContext = null;
     static String tariffPlanName = "";
+    static boolean isPermissionAllowed = false;
+    static String districtGeo = "";
 
     public void requestPermissions(String[] PERMISSIONS) {
         ActivityCompat.requestPermissions(this, PERMISSIONS,
@@ -147,6 +149,12 @@ public class MainActivity extends AppCompatActivity {
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
             });
         }
+    }
+
+    public boolean isGPSPermAllowed() {
+        return ContextCompat.checkSelfPermission(getApplicationContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
     }
 
     public void checkGPSPermission() {
@@ -220,6 +228,7 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(getIntent());
                     sendInfoBroadcast(ParamsAndConstants.ID_ACTION_START_GPS_DETECTING, "---");
                     backgroundCoordSearchCompleted = false;
+                    isPermissionAllowed = true;
                 } else {
                     AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
@@ -397,7 +406,8 @@ public class MainActivity extends AppCompatActivity {
                      *       'districtId': districtId,
                      *       'districtName': districtName,
                      *       'companyId': companyId,
-                     *       'companyName': companyName
+                     *       'companyName': companyName,
+                     *       'districtGeo': districtGeo,
                      *     };
                      */
                     try {
@@ -406,6 +416,10 @@ public class MainActivity extends AppCompatActivity {
                         setSectDetectInfo("Фирма: " + resultJson.getString("companyName") +
                                 "Район: " + resultJson.getString("districtName") +
                                 "Сектор: " + resultJson.getString("sectorName"));
+
+                        if (resultJson.has("resultJson")) {
+                            districtGeo = resultJson.getString("districtGeo");
+                        }
                     }   catch(Exception e)  {
                         showMyMsg("Неудачное чтение данных определения сектора!"+e.getMessage());
                     }
@@ -1089,34 +1103,55 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startGPSCoordsProcessing(boolean gadr_alternative) {
+        final boolean gadraa = gadr_alternative;
         if(lastAdr.length()>2) {
-            final boolean gadraa = gadr_alternative;
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Поиск по адресу").setMessage("Искать в регионе '" + ParamsAndConstants.REGION_DEFAULT + "'")
+            builder.setTitle("Введен адрес Откуда!").setMessage("В поле откуда введен адрес, искать координату через GPS? Нет - искать по адресу.")
                     .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
-                            // FIRE ZE MISSILES!
-                            //sendReverseGeocodeHTTPRequest(ParamsAndConstants.REGION_DEFAULT+" "+tgadr);
-                            lastAdr = ParamsAndConstants.REGION_DEFAULT + lastAdr;
-                            startGPSCoordsProcessingInc(gadraa);
+                            startGPSCoordsProcessingInc(gadraa, true);
                         }
                     })
-                    .setNegativeButton("Искать везде", new DialogInterface.OnClickListener() {
+                    .setNegativeButton("Нет", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int id) {
                             // User cancelled the dialog
                             //sendReverseGeocodeHTTPRequest(tgadr);
-                            startGPSCoordsProcessingInc(gadraa);
+                            startGPSDetectWithAddr(gadraa);
                         }
                     }).show();
-        }   else
-            startGPSCoordsProcessingInc(gadr_alternative);
+        }   else {
+            startGPSCoordsProcessingInc(gadr_alternative, false);
+        }
     }
-    public void startGPSCoordsProcessingInc(boolean gadr_alternative) {
+
+    public void startGPSDetectWithAddr(boolean gadr_alternative) {
+        final boolean gadraa = gadr_alternative;
+        final String regionAddr = districtGeo.length() > 0 ? districtGeo : ParamsAndConstants.REGION_DEFAULT;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Поиск по адресу").setMessage("Искать в регионе '" + regionAddr + "'")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // FIRE ZE MISSILES!
+                        //sendReverseGeocodeHTTPRequest(ParamsAndConstants.REGION_DEFAULT+" "+tgadr);
+                        lastAdr = regionAddr + lastAdr;
+                        startGPSCoordsProcessingInc(gadraa, false);
+                    }
+                })
+                .setNegativeButton("Искать везде", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // User cancelled the dialog
+                        //sendReverseGeocodeHTTPRequest(tgadr);
+                        startGPSCoordsProcessingInc(gadraa, false);
+                    }
+                }).show();
+    }
+
+    public void startGPSCoordsProcessingInc(boolean gadr_alternative, boolean dontGetCoordByAdr) {
         //Создаем ProgressDialog
         Indicator = new ProgressDialog(this);
         //Настраиваем для ProgressDialog название его окна:
         sendInfoBroadcast(ParamsAndConstants.ID_ACTION_START_GPS_DETECTING, "---");
-        if(gadr_alternative)
+        if(gadr_alternative && !dontGetCoordByAdr)
             getCoordsByAdr(lastAdr);
         activeCoordSearch = true;
         Indicator.setMessage("Определение местоположения...");
@@ -1336,7 +1371,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        sendInfoBroadcast(ParamsAndConstants.ID_ACTION_START_GPS_DETECTING, "---");
+        if (isGPSPermAllowed()) {
+            sendInfoBroadcast(ParamsAndConstants.ID_ACTION_START_GPS_DETECTING, "---");
+        }
         //this.checkGPSPermission();
     }
 
