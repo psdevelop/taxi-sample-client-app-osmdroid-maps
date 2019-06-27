@@ -1,5 +1,6 @@
 package ru.psdevelop.tdclientapp;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -10,6 +11,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.location.GpsSatellite;
 import android.location.GpsStatus;
 import android.location.Location;
@@ -25,6 +27,7 @@ import android.os.Message;
 import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.ContextCompat;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.text.InputType;
@@ -703,8 +706,12 @@ public class TDClientService extends Service implements LocationListener {
 
     public int onStartCommand(Intent intent, int flags, int startId) {
         reloadPrefs();
-        singleGPSDetect=true;
-        requestLUpd(true);
+        if (ContextCompat.checkSelfPermission(getApplicationContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            singleGPSDetect = true;
+            requestLUpd(true);
+        }
         //showNotification("Упр. шлюз", "Запущена основная служба шлюза!");
         return super.onStartCommand(intent, flags, startId);
     }
