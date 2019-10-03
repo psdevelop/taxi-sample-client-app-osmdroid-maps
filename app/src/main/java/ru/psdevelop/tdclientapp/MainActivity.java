@@ -127,24 +127,50 @@ public class MainActivity extends AppCompatActivity {
     static String tariffPlanName = "";
     static boolean isPermissionAllowed = false;
     static String districtGeo = "";
+    static boolean useFineLocation = true;
 
     public void requestPermissions(String[] PERMISSIONS) {
         ActivityCompat.requestPermissions(this, PERMISSIONS,
                 TDClientService.TDC_PERMISSIONS_REQUEST_READ_CONTACTS);
     }
 
+    public static boolean getUseFineLocation() {
+        return useFineLocation;
+    }
+
     public void configurePermissionsRequest(boolean denyLocation, boolean denyStorage) {
+
         if (denyLocation && denyStorage) {
-            requestPermissions(new String[]{
-                    Manifest.permission.ACCESS_COARSE_LOCATION,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-            });
+            //showMyMsg("1");
+            if (getUseFineLocation()) {
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                });
+            } else {
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        //Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                });
+            }
         }
         else if (denyLocation) {
-            requestPermissions(new String[]{
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-            });
+            //showMyMsg("2");
+            if (getUseFineLocation()) {
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                });
+            } else {
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        //Manifest.permission.ACCESS_FINE_LOCATION
+                });
+            }
         } else {
+            //showMyMsg("3");
             requestPermissions(new String[]{
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
             });
@@ -154,21 +180,31 @@ public class MainActivity extends AppCompatActivity {
     public boolean isGPSPermAllowed() {
         return ContextCompat.checkSelfPermission(getApplicationContext(),
                 Manifest.permission.ACCESS_COARSE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED;
+                == PackageManager.PERMISSION_GRANTED &&
+                (ContextCompat.checkSelfPermission(getApplicationContext(),
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED || !getUseFineLocation());
     }
 
     public void checkGPSPermission() {
         // Here, thisActivity is the current activity
-        final boolean denyLocation = ContextCompat.checkSelfPermission(this,
-                    Manifest.permission.ACCESS_COARSE_LOCATION)
-                        != PackageManager.PERMISSION_GRANTED,
+        //
+        final boolean denyLocation =
+                ContextCompat.checkSelfPermission(this,
+                      Manifest.permission.ACCESS_COARSE_LOCATION)
+                      != PackageManager.PERMISSION_GRANTED ||
+                (ContextCompat.checkSelfPermission(this,
+                      Manifest.permission.ACCESS_FINE_LOCATION)
+                      != PackageManager.PERMISSION_GRANTED && getUseFineLocation()),
                 denyStorage = ContextCompat.checkSelfPermission(this,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED;
         if (denyLocation || denyStorage) {
             // Should we show an explanation?
-            if (    (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        Manifest.permission.ACCESS_COARSE_LOCATION) ||
+            if (    ((ActivityCompat.shouldShowRequestPermissionRationale(this,
+                          Manifest.permission.ACCESS_FINE_LOCATION) && getUseFineLocation()) ||
+                            ActivityCompat.shouldShowRequestPermissionRationale(this,
+                                Manifest.permission.ACCESS_COARSE_LOCATION) ||
                         !denyLocation) &&
                     (ActivityCompat.shouldShowRequestPermissionRationale(this,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE) ||
@@ -208,7 +244,12 @@ public class MainActivity extends AppCompatActivity {
                     ||
                         (grantResults.length == 2
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED
-                        && grantResults[1] == PackageManager.PERMISSION_GRANTED) ) {
+                        && grantResults[1] == PackageManager.PERMISSION_GRANTED)
+                        ||
+                            (grantResults.length == 3
+                            && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                            && grantResults[1] == PackageManager.PERMISSION_GRANTED
+                            && grantResults[2] == PackageManager.PERMISSION_GRANTED) ) {
 
                     /*AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
