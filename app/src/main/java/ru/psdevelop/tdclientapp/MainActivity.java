@@ -1893,7 +1893,7 @@ public class MainActivity extends AppCompatActivity {
                         try	{
 
                             Intent dialIntent = new Intent(Intent.ACTION_DIAL,
-                                    Uri.fromParts("tel", driverPhone, null));
+                                    Uri.fromParts("tel", "+7" + driverPhone, null));
                             startActivity(dialIntent);
                         } catch(Exception cex)	{
                             Toast toastErrorStartDial = Toast.
