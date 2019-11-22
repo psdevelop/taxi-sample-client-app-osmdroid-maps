@@ -17,6 +17,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -128,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
     static boolean isPermissionAllowed = false;
     static String districtGeo = "";
     static boolean useFineLocation = true;
+    static String driverPhone = "";
 
     public void requestPermissions(String[] PERMISSIONS) {
         ActivityCompat.requestPermissions(this, PERMISSIONS,
@@ -568,6 +570,10 @@ public class MainActivity extends AppCompatActivity {
                             for (int i = 0; i < resultJson.getInt("ocn"); i++) {
                                 hasOrders = true;
 
+                                if(resultJson.has("dphn"+i)) {
+                                    driverPhone = resultJson.getString("dphn"+i);
+                                }
+
                                 if(i==0) {
                                     try {
                                         //showMyMsg(resultJson.getString("odt"+i));
@@ -611,8 +617,13 @@ public class MainActivity extends AppCompatActivity {
                                         ordersInfo = ordersInfo + "status" + resultJson.getInt("ors" + i);
                                         if (resultJson.getInt("ors" + i) == 0)
                                             ords_dt = ords_dt + " ищем машину";
-                                        if (resultJson.getInt("ors" + i) == 8)
+                                        if (resultJson.getInt("ors" + i) == 8) {
                                             ords_dt = ords_dt + " за Вами отправлена машина";
+                                            if ((!resultJson.has("opl" + i) || !(resultJson.getInt("opl" + i) == 1)) &&
+                                                    resultJson.has("wtr" + i)) {
+                                                ords_dt = ords_dt + " (вр. ожидания " + resultJson.getInt("wtr" + i) + " мин.)";
+                                            }
+                                        }
                                         if (resultJson.has("opl" + i))
                                         if (resultJson.getInt("opl" + i) == 1 && resultJson.getInt("ors" + i) == 8) {
                                             ords_dt = ords_dt + " ожидает выходите";
@@ -1760,6 +1771,7 @@ public class MainActivity extends AppCompatActivity {
         public View fragmentViev;
         Button orderButton, cancelButton, gpsDetectButton,
                 clearBtn, cancelMapButton;
+        FloatingActionButton callButton;
         AutoCompleteTextView editTextFromAdres;
         EditText editTextToAdres;
 
@@ -1871,6 +1883,27 @@ public class MainActivity extends AppCompatActivity {
                 editTextFromAdres = (AutoCompleteTextView)rootView.findViewById(R.id.editTextFromAdr);
                 editTextToAdres = (EditText)rootView.findViewById(R.id.editTextToAdr);
                 clearBtn = (Button)rootView.findViewById(R.id.btn_clear);
+                callButton = (FloatingActionButton) rootView.findViewById(R.id.floatingActionButton);
+
+
+
+                callButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        try	{
+
+                            Intent dialIntent = new Intent(Intent.ACTION_DIAL,
+                                    Uri.fromParts("tel", driverPhone, null));
+                            startActivity(dialIntent);
+                        } catch(Exception cex)	{
+                            Toast toastErrorStartDial = Toast.
+                                    makeText(getActivity(),
+                                            "Ошибка набора номера!", Toast.LENGTH_LONG);
+                            toastErrorStartDial.show();
+                        }
+                    }
+                });
+
                 editTextFromAdres.addTextChangedListener(new TextWatcher() {
                     @Override
                     public void onTextChanged(CharSequence s, int start, int before, int count) {
