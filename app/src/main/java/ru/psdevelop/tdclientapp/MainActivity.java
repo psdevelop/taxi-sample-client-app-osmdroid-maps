@@ -754,7 +754,9 @@ public class MainActivity extends AppCompatActivity {
                     startGPSCoordsProcessing(true);
                 }   else if(msg.arg1 == ParamsAndConstants.MA_ORDERING)   {
                     hasMAOrdering=true;
-                    sendOrderRequest(msg.getData().getString("msg_text"), msg.getData().getString("end_adr"));
+                    sendOrderRequest(msg.getData().getString("msg_text"),
+                            msg.getData().getString("end_adr"),
+                            msg.getData().getString("comment"));
                     hasMAOrdering=true;
                     hasOrderRequest=true;
                     hasMAOrderAdr=msg.getData().getString("msg_text");
@@ -979,11 +981,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void sendOrderRequest(String start_adr, String end_adr)  {
+    public void sendOrderRequest(String start_adr, String end_adr, String comment)  {
         Intent intent = new Intent(INFO_ACTION);
         intent.putExtra(ParamsAndConstants.TYPE, ParamsAndConstants.ID_ACTION_GO_ORDERING);
         intent.putExtra(ParamsAndConstants.MSG_TEXT, start_adr);
         intent.putExtra("end_adr", end_adr);
+        intent.putExtra("comment", comment);
         sendBroadcast(intent);
     }
 
@@ -992,6 +995,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static String lastAdr="";
+    public static String lastComment = "";
 
     public void getCoordsByAdr(String gadr)    {
         if(gadr.length()>2)
@@ -1436,6 +1440,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             Intent i = new Intent(getBaseContext(), TDClientService.class);
             startService(i);
+            //startForegroundService(i);
             if (prefs.getString("example_text", "").length() == 10) {
                 this.checkGPSPermission();
             }
@@ -1773,7 +1778,7 @@ public class MainActivity extends AppCompatActivity {
                 clearBtn, cancelMapButton;
         FloatingActionButton callButton;
         AutoCompleteTextView editTextFromAdres;
-        EditText editTextToAdres;
+        EditText editTextToAdres, commentEditText;
 
         public static final String ARG_ITEM_ID = "employee_list";
 
@@ -1884,8 +1889,8 @@ public class MainActivity extends AppCompatActivity {
                 editTextToAdres = (EditText)rootView.findViewById(R.id.editTextToAdr);
                 clearBtn = (Button)rootView.findViewById(R.id.btn_clear);
                 callButton = (FloatingActionButton) rootView.findViewById(R.id.floatingActionButton);
-
-
+                commentEditText = (EditText)rootView.findViewById(R.id.editComment);
+                commentEditText.setText(lastComment);
 
                 callButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -1901,6 +1906,25 @@ public class MainActivity extends AppCompatActivity {
                                             "Ошибка набора номера!", Toast.LENGTH_LONG);
                             toastErrorStartDial.show();
                         }
+                    }
+                });
+
+                commentEditText.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        //here is your code
+                    }
+
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count,
+                                                  int after) {
+                        // TODO Auto-generated method stub
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        // TODO Auto-generated method stub
+                        lastComment = commentEditText.getText().toString();
                     }
                 });
 
@@ -1956,6 +1980,7 @@ public class MainActivity extends AppCompatActivity {
                                     String tplanName = tariffPlanName.length() > 0 ? "(" + tariffPlanName + ")" : "";
                                     bnd.putString("msg_text", editTextFromAdres.getText().toString() + tplanName);
                                     bnd.putString("end_adr", editTextToAdres.getText().toString());
+                                    bnd.putString("comment", commentEditText.getText().toString());
                                     msg.setData(bnd);
                                     handle.sendMessage(msg);
                                 } else {

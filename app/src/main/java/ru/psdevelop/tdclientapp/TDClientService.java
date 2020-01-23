@@ -305,6 +305,7 @@ public class TDClientService extends Service implements LocationListener {
                                 resultJson.put("phone", phone);
                                 resultJson.put("stadr", intent.getStringExtra(ParamsAndConstants.MSG_TEXT));
                                 resultJson.put("enadr", intent.getStringExtra("end_adr"));
+                                resultJson.put("comment", intent.getStringExtra("comment"));
                                 mSocket.emit("new order", resultJson.toString());
                             }
                         } catch (Exception ex) {
@@ -492,6 +493,19 @@ public class TDClientService extends Service implements LocationListener {
                         lastStatusData="";
                         auth = false;
                         mSocket = IO.socket(ParamsAndConstants.srvHost);
+                        /*mSocket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
+                            @Override
+                            public void call(Object... args) {
+                                showToast("connected");
+                            }
+                        });
+                        mSocket.on(Socket.EVENT_ERROR, new Emitter.Listener() {
+                            @Override
+                            public void call(Object... args) {
+                                Object arg = args[0];
+                                showToast("error" + (arg != null ? arg.toString() : "none"));
+                            }
+                        });*/
                         if (mSocket != null) {
                             inactiveTimeoutBlock=false;
                             mSocket.connect();
