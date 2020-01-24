@@ -14,37 +14,26 @@
             android:layout_height="fill_parent" />
     <!--</LinearLayout>-->
 
-    <WebView
+    <!--<WebView
         android:id="@+id/webView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_marginBottom="0dp"
         android:minHeight="170dp"
-        android:visibility="invisible" />
+        android:visibility="invisible" />-->
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="156dp"
+        android:layout_height="176dp"
         android:layout_alignBottom="@id/map"
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentBottom="true"
         android:alpha="0.8"
         android:background="#888"
+        android:minHeight="156dp"
         android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/mapStatusView"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginLeft="12dp"
-            android:layout_marginTop="5dp"
-            android:layout_marginRight="12dp"
-            android:lines="3"
-            android:text="СТАТУС: подключаюсь..."
-            android:textColor="#fff"
-            android:textSize="15dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -74,11 +63,25 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_margin="3dp"
-                    android:background="#ff1945"
+                    android:background="@drawable/rounded_button"
                     android:text="ОТМЕНА" />
             </LinearLayout>
 
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/mapStatusView"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginLeft="12dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginRight="12dp"
+            android:lines="3"
+            android:text="СТАТУС: подключаюсь..."
+            android:textColor="#fff"
+            android:textSize="15dp" />
+
+
 
     </LinearLayout>
 
