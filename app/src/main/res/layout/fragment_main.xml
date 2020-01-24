@@ -37,7 +37,7 @@
         android:layout_marginLeft="0dp"
         android:layout_marginTop="0dp"
         android:layout_marginBottom="0dp"
-        android:background="#02c854"
+        android:background="@drawable/order_button"
         android:minWidth="150dp"
         android:padding="5dp"
         android:shadowColor="#a3dae9"
@@ -58,7 +58,7 @@
         android:layout_marginTop="-1dp"
         android:layout_marginEnd="0dp"
         android:layout_marginRight="0dp"
-        android:background="#4052b5"
+        android:background="@drawable/gps_button"
         android:text="ОПРЕДЕЛИТЬ МЕСТОПОЛОЖЕНИЕ"
         android:textColor="#ffffff" />
 
@@ -106,7 +106,7 @@
         android:layout_marginTop="-1dp"
         android:layout_marginEnd="1dp"
         android:layout_marginRight="1dp"
-        android:background="#ff1945"
+        android:background="@drawable/rounded_button"
         android:minWidth="150dp"
         android:padding="5dp"
         android:shadowColor="#a3dae9"
