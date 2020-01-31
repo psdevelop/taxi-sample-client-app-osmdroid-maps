@@ -126,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
     static RadioGroup tarifPlanChoice = null;
     static Context firstFragmentContext = null;
     static String tariffPlanName = "";
+    static int tariffPlanId = 0;
     static boolean isPermissionAllowed = false;
     static String districtGeo = "";
     static boolean useFineLocation = true;
@@ -510,10 +511,13 @@ public class MainActivity extends AppCompatActivity {
                             getString("msg_text"));
                         int tplansCnt = resultJson.getInt("tpl_cnt");
                         tariffPlanName = "";
+                        tariffPlanId = 0;
+                        tarifPlanChoice.removeAllViews();
                         //showMyMsg("cnt=" + tplansCnt);
                         for (int i = 0; i < tplansCnt; i++) {
                             RadioButton newRadioButton = new RadioButton(firstFragmentContext);
                             newRadioButton.setText(resultJson.getString("tpn" + i));
+                            newRadioButton.setId(resultJson.getInt("tpid" + i));
                             tarifPlanChoice.addView(newRadioButton);
                         }
 
@@ -524,11 +528,12 @@ public class MainActivity extends AppCompatActivity {
                                 RadioButton rb = (RadioButton)findViewById(checkedId);
                                 //textViewChoice.setText("You Selected " + rb.getText());
                                 tariffPlanName = rb.getText().toString();
+                                tariffPlanId = checkedId;
                                 Toast.makeText(getApplicationContext(), rb.getText(), Toast.LENGTH_SHORT).show();
                             }
                         });
                     }   catch(Exception e)  {
-                        showMyMsg("Неудачное чтение данных тарифов и опций!"+e.getMessage());
+                        showMyMsg("Неудачное чтение данных тарифов и опций!" + e.getMessage());
                     }
                 }
                 else if (msg.arg1 == ParamsAndConstants.SHOW_STATUS_INFO) {
@@ -1981,6 +1986,7 @@ public class MainActivity extends AppCompatActivity {
                                     bnd.putString("msg_text", editTextFromAdres.getText().toString() + tplanName);
                                     bnd.putString("end_adr", editTextToAdres.getText().toString());
                                     bnd.putString("comment", commentEditText.getText().toString());
+                                    bnd.putInt("tariffPlanId", tariffPlanId);
                                     msg.setData(bnd);
                                     handle.sendMessage(msg);
                                 } else {
