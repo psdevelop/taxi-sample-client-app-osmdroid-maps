@@ -538,8 +538,9 @@ public class MainActivity extends AppCompatActivity {
                                 RadioButton rb = (RadioButton)findViewById(checkedId);
                                 //textViewChoice.setText("You Selected " + rb.getText());
                                 tariffPlanName = rb.getText().toString();
-                                tariffPlanId = checkedId;
-                                Toast.makeText(getApplicationContext(), rb.getText(), Toast.LENGTH_SHORT).show();
+                                tariffPlanId = rb.getId();
+                                Toast.makeText(getApplicationContext(), rb.getText() + "::" + rb.getId(),
+                                        Toast.LENGTH_SHORT).show();
                             }
                         });
                     }   catch(Exception e)  {
@@ -773,7 +774,7 @@ public class MainActivity extends AppCompatActivity {
                             msg.getData().getString("end_adr"),
                             msg.getData().getString("comment"),
                             msg.getData().getString("shedule_date"),
-                            msg.getData().getInt("tariffPlanId"));
+                            msg.getData().getInt("tariff_plan_id"));
                     hasMAOrdering=true;
                     hasOrderRequest=true;
                     hasMAOrderAdr=msg.getData().getString("msg_text");
@@ -998,14 +999,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void sendOrderRequest(String start_adr, String end_adr, String comment, String sheduleDate, int tariffPlanId)  {
+    public void sendOrderRequest(String start_adr, String end_adr, String comment, String sheduleDate, int tarPlanId)  {
         Intent intent = new Intent(INFO_ACTION);
         intent.putExtra(ParamsAndConstants.TYPE, ParamsAndConstants.ID_ACTION_GO_ORDERING);
         intent.putExtra(ParamsAndConstants.MSG_TEXT, start_adr);
         intent.putExtra("end_adr", end_adr);
         intent.putExtra("comment", comment);
         intent.putExtra("shedule_date", sheduleDate);
-        intent.putExtra("tariff_plan_id", tariffPlanId);
+        intent.putExtra("tariff_plan_id", tarPlanId);
         sendBroadcast(intent);
     }
 
@@ -2068,7 +2069,7 @@ public class MainActivity extends AppCompatActivity {
                                     bnd.putString("comment", commentEditText.getText().toString());
                                     String dateStr = dateEdit.getText().toString();
                                     bnd.putString("shedule_date", dateStr.length() == 19 ? dateStr : "");
-                                    bnd.putInt("tariffPlanId", tariffPlanId);
+                                    bnd.putInt("tariff_plan_id", tariffPlanId);
                                     msg.setData(bnd);
                                     handle.sendMessage(msg);
                                 } else {
