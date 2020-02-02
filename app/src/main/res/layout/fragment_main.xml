@@ -10,6 +10,24 @@
     tools:context="ru.psdevelop.tdclientapp.MainActivity$PlaceholderFragment">
 
     <EditText
+        android:id="@+id/editSheduleDate"
+        android:layout_width="379dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/imageView"
+        android:layout_alignStart="@+id/gpsDetectButton"
+        android:layout_alignLeft="@+id/gpsDetectButton"
+        android:layout_alignEnd="@+id/gpsDetectButton"
+        android:layout_alignRight="@+id/gpsDetectButton"
+        android:layout_marginStart="0dp"
+        android:layout_marginLeft="0dp"
+        android:layout_marginTop="193dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginRight="0dp"
+        android:editable="false"
+        android:hint="время отправки (необязательно)"
+        android:textSize="18sp" />
+
+    <EditText
         android:id="@+id/editComment"
         android:layout_width="379dp"
         android:layout_height="wrap_content"
@@ -18,12 +36,12 @@
         android:layout_alignLeft="@+id/gpsDetectButton"
         android:layout_alignEnd="@+id/gpsDetectButton"
         android:layout_alignRight="@+id/gpsDetectButton"
-        android:layout_marginStart="-1dp"
-        android:layout_marginLeft="-1dp"
-        android:layout_marginTop="194dp"
-        android:layout_marginEnd="1dp"
-        android:layout_marginRight="1dp"
-        android:hint="комментарий"
+        android:layout_marginStart="1dp"
+        android:layout_marginLeft="1dp"
+        android:layout_marginTop="239dp"
+        android:layout_marginEnd="-1dp"
+        android:layout_marginRight="-1dp"
+        android:hint="комментарий (необязательно)"
         android:textSize="18sp" />
 
     <Button
@@ -115,7 +133,7 @@
 
     <TextView
         android:id="@+id/textViewStatus"
-        android:layout_width="378dp"
+        android:layout_width="394dp"
         android:layout_height="73dp"
         android:layout_below="@+id/orderButton"
         android:layout_alignEnd="@+id/cancelButton"
@@ -124,7 +142,7 @@
         android:layout_alignParentLeft="true"
         android:layout_marginStart="0dp"
         android:layout_marginLeft="0dp"
-        android:layout_marginTop="52dp"
+        android:layout_marginTop="99dp"
         android:layout_marginEnd="0dp"
         android:layout_marginRight="0dp"
         android:lines="7"

@@ -306,6 +306,8 @@ public class TDClientService extends Service implements LocationListener {
                                 resultJson.put("stadr", intent.getStringExtra(ParamsAndConstants.MSG_TEXT));
                                 resultJson.put("enadr", intent.getStringExtra("end_adr"));
                                 resultJson.put("comment", intent.getStringExtra("comment"));
+                                resultJson.put("shedule_date", intent.getStringExtra("shedule_date"));
+                                resultJson.put("tariffPlanId", intent.getStringExtra("tariff_plan_id"));
                                 mSocket.emit("new order", resultJson.toString());
                             }
                         } catch (Exception ex) {

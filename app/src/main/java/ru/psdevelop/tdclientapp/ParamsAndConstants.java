@@ -6,7 +6,7 @@ package ru.psdevelop.tdclientapp;
 public abstract class ParamsAndConstants {
     public static double defLat=44.878208;
     public static double defLon=37.314103;
-    public static String srvHost="http://192.168.8.90:8081";
+    public static String srvHost="http://192.168.1.90:8081";
     public static final String REGION_DEFAULT = " Анапский район Анапа ";
     public static final String PLACES_DEFAULT = " Анапский район ";
     public static final String PLACE_REPLACE1 = " Анапа, ";

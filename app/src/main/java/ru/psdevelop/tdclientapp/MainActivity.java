@@ -3,7 +3,10 @@ package ru.psdevelop.tdclientapp;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.app.TimePickerDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -20,6 +23,7 @@ import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -33,6 +37,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -44,12 +49,14 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 import android.content.Intent;
 
@@ -77,6 +84,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,6 +139,8 @@ public class MainActivity extends AppCompatActivity {
     static String districtGeo = "";
     static boolean useFineLocation = true;
     static String driverPhone = "";
+    static EditText dateEdit;
+    static String lastSheduleTime = "";
 
     public void requestPermissions(String[] PERMISSIONS) {
         ActivityCompat.requestPermissions(this, PERMISSIONS,
@@ -761,7 +771,9 @@ public class MainActivity extends AppCompatActivity {
                     hasMAOrdering=true;
                     sendOrderRequest(msg.getData().getString("msg_text"),
                             msg.getData().getString("end_adr"),
-                            msg.getData().getString("comment"));
+                            msg.getData().getString("comment"),
+                            msg.getData().getString("shedule_date"),
+                            msg.getData().getInt("tariffPlanId"));
                     hasMAOrdering=true;
                     hasOrderRequest=true;
                     hasMAOrderAdr=msg.getData().getString("msg_text");
@@ -986,12 +998,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void sendOrderRequest(String start_adr, String end_adr, String comment)  {
+    public void sendOrderRequest(String start_adr, String end_adr, String comment, String sheduleDate, int tariffPlanId)  {
         Intent intent = new Intent(INFO_ACTION);
         intent.putExtra(ParamsAndConstants.TYPE, ParamsAndConstants.ID_ACTION_GO_ORDERING);
         intent.putExtra(ParamsAndConstants.MSG_TEXT, start_adr);
         intent.putExtra("end_adr", end_adr);
         intent.putExtra("comment", comment);
+        intent.putExtra("shedule_date", sheduleDate);
+        intent.putExtra("tariff_plan_id", tariffPlanId);
         sendBroadcast(intent);
     }
 
@@ -1776,6 +1790,51 @@ public class MainActivity extends AppCompatActivity {
         handle.sendMessage(msg);
     }
 
+    public static class DatePickerFragment extends DialogFragment implements
+            DatePickerDialog.OnDateSetListener {
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            // Use the current date as the default date in the picker
+            final Calendar c = Calendar.getInstance();
+            int year = c.get(Calendar.YEAR);
+            int month = c.get(Calendar.MONTH);
+            int day = c.get(Calendar.DAY_OF_MONTH);
+
+            // Create a new instance of DatePickerDialog and return it
+            return new DatePickerDialog(getActivity(), this, year, month, day);
+        }
+
+        public void onDateSet(DatePicker view, int year, int month, int day) {
+            // Do something with the date chosen by the user
+            dateEdit.setText(year + "-" + (day < 10 ? "0" : "") + day + "-" +
+                    ((month + 1) < 10 ? "0" : "") + (month + 1));
+        }
+    }
+
+    public static class TimePickerFragment extends DialogFragment implements
+            TimePickerDialog.OnTimeSetListener {
+
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            // Use the current time as the default values for the picker
+            final Calendar c = Calendar.getInstance();
+            int hour = c.get(Calendar.HOUR_OF_DAY);
+            int minute = c.get(Calendar.MINUTE);
+
+            // Create a new instance of TimePickerDialog and return it
+            return new TimePickerDialog(getActivity(), this, hour, minute,
+                    DateFormat.is24HourFormat(getActivity()));
+        }
+
+        public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+            // Do something with the time chosen by the user
+            lastSheduleTime = dateEdit.getText() + " " + (hourOfDay < 10 ? "0" : "") +
+                    hourOfDay + ":" + (minute < 10 ? "0" : "") + minute + ":00";
+            dateEdit.setText(lastSheduleTime);
+        }
+    }
+
     public static class PlaceholderFragment extends Fragment {
         private static final String ARG_SECTION_NUMBER = "section_number";
         public View fragmentViev;
@@ -1873,6 +1932,16 @@ public class MainActivity extends AppCompatActivity {
             return fragment;
         }
 
+        public void showTruitonTimePickerDialog(View v) {
+            DialogFragment newFragment = new TimePickerFragment();
+            newFragment.show(getFragmentManager(), "timePicker");
+        }
+
+        public void showTruitonDatePickerDialog(View v) {
+            DialogFragment newFragment = new DatePickerFragment();
+            newFragment.show(getFragmentManager(), "datePicker");
+        }
+
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
@@ -1896,6 +1965,17 @@ public class MainActivity extends AppCompatActivity {
                 callButton = (FloatingActionButton) rootView.findViewById(R.id.floatingActionButton);
                 commentEditText = (EditText)rootView.findViewById(R.id.editComment);
                 commentEditText.setText(lastComment);
+
+                dateEdit = (EditText) rootView.findViewById(R.id.editSheduleDate);
+                dateEdit.setText(lastSheduleTime);
+
+                dateEdit.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        showTruitonTimePickerDialog(v);
+                        showTruitonDatePickerDialog(v);
+                    }
+                });
 
                 callButton.setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -1986,6 +2066,8 @@ public class MainActivity extends AppCompatActivity {
                                     bnd.putString("msg_text", editTextFromAdres.getText().toString() + tplanName);
                                     bnd.putString("end_adr", editTextToAdres.getText().toString());
                                     bnd.putString("comment", commentEditText.getText().toString());
+                                    String dateStr = dateEdit.getText().toString();
+                                    bnd.putString("shedule_date", dateStr.length() == 19 ? dateStr : "");
                                     bnd.putInt("tariffPlanId", tariffPlanId);
                                     msg.setData(bnd);
                                     handle.sendMessage(msg);
@@ -2334,8 +2416,10 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 fr = PlaceholderFragment.newInstance(position + 1);
             }
-            if(position==0)
-                firstTab=(PlaceholderFragment)fr;
+            if(position==0) {
+                firstTab = (PlaceholderFragment) fr;
+            }
+
             return fr;
         }
 
@@ -2353,6 +2437,7 @@ public class MainActivity extends AppCompatActivity {
             bnd.putString("msg_text", "instantiateItem"+position+"==="+this.getItemPosition());
             msg.setData(bnd);
             handle.sendMessage(msg);*/
+
             return super.instantiateItem(container, position);
         }
 
