@@ -1808,8 +1808,8 @@ public class MainActivity extends AppCompatActivity {
 
         public void onDateSet(DatePicker view, int year, int month, int day) {
             // Do something with the date chosen by the user
-            dateEdit.setText(year + "-" + (day < 10 ? "0" : "") + day + "-" +
-                    ((month + 1) < 10 ? "0" : "") + (month + 1));
+            dateEdit.setText(year + "-" + ((month + 1) < 10 ? "0" : "") + (month + 1) + "-" +
+                    (day < 10 ? "0" : "") + day);
         }
     }
 
