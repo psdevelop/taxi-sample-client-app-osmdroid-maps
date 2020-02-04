@@ -137,7 +137,8 @@ public class MainActivity extends AppCompatActivity {
     static int tariffPlanId = 0;
     static boolean isPermissionAllowed = false;
     static String districtGeo = "";
-    static boolean useFineLocation = false;
+    static boolean useFineLocation = true;
+    static boolean onlyGPSLocation = false;
     static String driverPhone = "";
     static EditText dateEdit;
     static String lastSheduleTime = "";
@@ -906,6 +907,12 @@ public class MainActivity extends AppCompatActivity {
                                 bnd.putString("msg_text", intent.getStringExtra(ParamsAndConstants.MSG_TEXT));
                                 msg.setData(bnd);
                                 handle.sendMessage(msg);
+
+                                if (intent.getStringExtra("provider").equals("net") && !onlyGPSLocation) {
+                                    onlyGPSLocation = true;
+
+                                    showNetDetectAlert();
+                                }
                             }
                             activeCoordSearch = false;
                         } catch (Exception ex) {
@@ -917,6 +924,24 @@ public class MainActivity extends AppCompatActivity {
             }
         }, new IntentFilter(TDClientService.INFO_ACTION));
         maCheckTimer = new MACheckTimer(this);
+    }
+
+    public void showNetDetectAlert() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+        builder.setTitle("ПРЕДУПРЕЖДЕНИЕ")
+                .setMessage("Определена координата при помощи сетей, если она не точна, " +
+                        "нажмите Определить местоположение чтобы найти ее через GPS!")
+                // кнопка "Yes", при нажатии на которую приложение закроется
+                .setPositiveButton("Ок",
+                        new DialogInterface.OnClickListener()
+                        {
+                            public void onClick(DialogInterface dialog, int whichButton)
+                            {
+
+                            }
+                        })
+                .show();
     }
 
     @Override

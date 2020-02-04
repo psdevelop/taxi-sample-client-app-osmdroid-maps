@@ -367,12 +367,17 @@ public class TDClientService extends Service implements LocationListener {
 
     @Override
     public void onLocationChanged(Location location) {
+        boolean isGps = location.getProvider().equals(LocationManager.GPS_PROVIDER);
         //showToast("onLocationChanged");
+        if (isGps) {
+            MainActivity.onlyGPSLocation = false;
+        }
         Intent intent = new Intent(INFO_ACTION);
         intent.putExtra(ParamsAndConstants.TYPE, ParamsAndConstants.ID_ACTION_SHOW_COORD_INFO);
         intent.putExtra(ParamsAndConstants.MSG_TEXT, "---");
         intent.putExtra("lastLat", location.getLatitude());
         intent.putExtra("lastLon", location.getLongitude());
+        intent.putExtra("provider", isGps ? "gps" : "net");
         sendBroadcast(intent);
         DecimalFormat df = new DecimalFormat("#.######");
         sendCCoords(df.format(location.getLatitude()).replace(",", "."),
@@ -384,7 +389,7 @@ public class TDClientService extends Service implements LocationListener {
     }
 
     public void requestLUpd(boolean singleReq)	{
-	if (MainActivity.getUseFineLocation()) {
+	if (MainActivity.getUseFineLocation() || MainActivity.onlyGPSLocation) {
             try {
                 myManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0, this);
             } catch (Exception le) {
@@ -392,12 +397,14 @@ public class TDClientService extends Service implements LocationListener {
             }
         }
 
+	if (!MainActivity.onlyGPSLocation) {
         try	{
             /*if (!mainActiv.USE_NETWORK_LOCATION||mainActiv.USE_BOTH_LOCATIONS)	{*/
             myManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000, 0, this);
         } catch(Exception le)	{
             showToast("Ошибка запуска слушателя TLM NETWORK_PROVIDER!"+le.getMessage());
         }
+    }
     }
 
     public void removeLUpd(boolean anyWay)	{
