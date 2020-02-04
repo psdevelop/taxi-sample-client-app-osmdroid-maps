@@ -137,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
     static int tariffPlanId = 0;
     static boolean isPermissionAllowed = false;
     static String districtGeo = "";
-    static boolean useFineLocation = true;
+    static boolean useFineLocation = false;
     static String driverPhone = "";
     static EditText dateEdit;
     static String lastSheduleTime = "";
