@@ -1682,7 +1682,8 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                     } catch (Exception e) {
-                        showMsg("Ошибка парсинга ответа Nominatim Geocoder" + e.getMessage());
+                        showMsg("Не найдена координата для введенного адреса " +
+                                e.getMessage());
                     }
 
                 }
@@ -1797,7 +1798,8 @@ public class MainActivity extends AppCompatActivity {
                         showGMAdress(addrJson.getString("road") + " " +
                                 addrJson.getString("house_number"));
                     } catch (Exception e) {
-                        showMsg("Ошибка парсинга ответа Nominatim Geocoder"+e.getMessage());
+                        showMsg("Не найден адрес по полученным координатам" +
+                                " Nominatim Geocoder" + e.getMessage());
                     }
                 }
                 catch (Exception e) {
