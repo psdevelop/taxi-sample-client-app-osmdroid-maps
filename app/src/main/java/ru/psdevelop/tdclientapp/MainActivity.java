@@ -520,30 +520,32 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         JSONObject resultJson = new JSONObject(msg.getData().
                             getString("msg_text"));
-                        int tplansCnt = resultJson.getInt("tpl_cnt");
-                        tariffPlanName = "";
-                        tariffPlanId = 0;
-                        tarifPlanChoice.removeAllViews();
-                        //showMyMsg("cnt=" + tplansCnt);
-                        for (int i = 0; i < tplansCnt; i++) {
-                            RadioButton newRadioButton = new RadioButton(firstFragmentContext);
-                            newRadioButton.setText(resultJson.getString("tpn" + i));
-                            newRadioButton.setId(resultJson.getInt("tpid" + i));
-                            tarifPlanChoice.addView(newRadioButton);
-                        }
-
-                        tarifPlanChoice.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener()
-                        {
-                            public void onCheckedChanged(RadioGroup group, int checkedId) {
-                                // checkedId is the RadioButton selected
-                                RadioButton rb = (RadioButton)findViewById(checkedId);
-                                //textViewChoice.setText("You Selected " + rb.getText());
-                                tariffPlanName = rb.getText().toString();
-                                tariffPlanId = rb.getId();
-                                Toast.makeText(getApplicationContext(), rb.getText() + "::" + rb.getId(),
-                                        Toast.LENGTH_SHORT).show();
+                        int enableShowTariffPlans = resultJson.getInt("en_sh_tpls");
+                        if (enableShowTariffPlans == 1) {
+                            int tplansCnt = resultJson.getInt("tpl_cnt");
+                            tariffPlanName = "";
+                            tariffPlanId = 0;
+                            tarifPlanChoice.removeAllViews();
+                            //showMyMsg("cnt=" + tplansCnt);
+                            for (int i = 0; i < tplansCnt; i++) {
+                                RadioButton newRadioButton = new RadioButton(firstFragmentContext);
+                                newRadioButton.setText(resultJson.getString("tpn" + i));
+                                newRadioButton.setId(resultJson.getInt("tpid" + i));
+                                tarifPlanChoice.addView(newRadioButton);
                             }
-                        });
+
+                            tarifPlanChoice.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+                                public void onCheckedChanged(RadioGroup group, int checkedId) {
+                                    // checkedId is the RadioButton selected
+                                    RadioButton rb = (RadioButton) findViewById(checkedId);
+                                    //textViewChoice.setText("You Selected " + rb.getText());
+                                    tariffPlanName = rb.getText().toString();
+                                    tariffPlanId = rb.getId();
+                                    Toast.makeText(getApplicationContext(), rb.getText() + "::" + rb.getId(),
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
                     }   catch(Exception e)  {
                         showMyMsg("Неудачное чтение данных тарифов и опций!" + e.getMessage());
                     }
